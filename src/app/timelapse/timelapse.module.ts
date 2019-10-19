@@ -6,6 +6,7 @@ import { TimelapseComponent } from './timelapse.component';
 import { MatSliderModule } from '@angular/material/slider';
 import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
+import { ImageCacheService } from './services/image-cache.service';
 
 
 @NgModule({
@@ -16,6 +17,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     TimelapseRoutingModule,
     MatSliderModule,
     HttpClientModule
-  ]
+  ],
+  providers: [ImageCacheService]
 })
 export class TimelapseModule { }

@@ -5,10 +5,8 @@ import { ActivatedRoute } from '@angular/router';
 import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount } from 'rxjs/operators';
 import { of, combineLatest } from 'rxjs';
 
-import '@nasaworldwind/worldwind';
 import { FormControl } from '@angular/forms';
-
-declare var WorldWind: any;
+import { ImageCacheService, WorldWindExport as WorldWind } from './services/image-cache.service';
 
 let bkpDates: string[] = [];
 
@@ -63,6 +61,7 @@ export class TimelapseComponent implements AfterViewInit {
 
   constructor(
     private route: ActivatedRoute,
+    private imageCacheService: ImageCacheService,
     private httpClient: HttpClient
   ) { }
 

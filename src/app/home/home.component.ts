@@ -41,8 +41,15 @@ export class HomeComponent {
   constructor(
     private router: Router,
     private httpClient: HttpClient
-    ) {
-
+  ) {
+    this.httpClient.get('https://neo.sci.gsfc.nasa.gov/wms/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0', { responseType: 'text' })
+      .pipe(
+        map(text => new DOMParser().parseFromString(text, 'text/xml')),
+      ).subscribe((xml => {
+        let objectAny = {};
+        console.log(xml.querySelector('Title'));
+        console.log(xml);
+      }));
   }
 
   displayFn(option: Element | string) {

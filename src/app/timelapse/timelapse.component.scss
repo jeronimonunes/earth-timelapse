@@ -1,5 +1,15 @@
 :host {
-  display: grid;
-  place-content: center;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+canvas {
+  height: calc(100vh - 100px);
+}
+
+mat-slider {
+  width: 100%;
+  max-width: 500px;
 }

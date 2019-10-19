@@ -2,12 +2,14 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, switchMap, map, shareReplay, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { pluck, map, shareReplay, tap, mergeMap } from 'rxjs/operators';
+import { of, Subscription } from 'rxjs';
 
 import '@nasaworldwind/worldwind';
 
 declare var WorldWind: any;
+
+let bkpDates: string[] = [];
 
 @Component({
   selector: 'app-timelapse',
@@ -16,11 +18,11 @@ declare var WorldWind: any;
 })
 export class TimelapseComponent implements AfterViewInit {
 
-  dates: any;
+  datesSubscription!: Subscription;
 
   metadata$ = this.route.params.pipe(
     pluck('name'),
-    switchMap(name =>
+    mergeMap(name =>
       this.httpClient.get(`https://neo.sci.gsfc.nasa.gov/servlet/FGDCMetadata?datasetId=${name}`, { responseType: 'text' })
     ),
     map(text => new DOMParser().parseFromString(text, 'text/xml')),
@@ -38,8 +40,7 @@ export class TimelapseComponent implements AfterViewInit {
 
   sliderMin$ = of(0);
   sliderMax$ = this.dates$.pipe(
-    tap(dates => this.dates = dates),
-    tap(console.log),
+    tap(dates => bkpDates = dates),
     map(dates => dates.length - 1)
   );
 
@@ -56,9 +57,8 @@ export class TimelapseComponent implements AfterViewInit {
   }
 
   displayDate(value: number) {
-    console.log(this.dates);
-    if (this.dates) {
-      const v = this.dates[value];
+    if (bkpDates) {
+      const v = bkpDates[value];
       if (typeof (v) === 'string') {
         return v.substring(0, 4) + '-' + v.substring(4, 6) + '-' + v.substring(6, 8);
       }

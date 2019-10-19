@@ -1,1 +1,24 @@
-/* You can add global styles to this file, and also import other style files */
+@import '~@angular/material/theming';
+@include mat-core();
+
+$earth-timelapse-primary: mat-palette($mat-indigo);
+$earth-timelapse-accent: mat-palette($mat-pink, A200, A100, A400);
+$earth-timelapse-warn: mat-palette($mat-red);
+$earth-timelapse-theme: mat-light-theme($earth-timelapse-primary, $earth-timelapse-accent, $earth-timelapse-warn);
+
+$theme: $earth-timelapse-theme;
+
+@include mat-core-theme($theme);
+@include mat-autocomplete-theme($theme);
+@include mat-input-theme($theme);
+@include mat-form-field-theme($theme);
+
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-family: 'Open Sans', sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css?family=Montserrat|Open+Sans&display=swap');

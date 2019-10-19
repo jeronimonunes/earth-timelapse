@@ -25,7 +25,8 @@
             "aot": false,
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              { "glob": "**/*", "ignore": ["*.js"], "input": "node_modules/@nasaworldwind/worldwind/build/dist", "output": "/" }
             ],
             "styles": [
               "src/styles.scss"
@@ -90,7 +91,8 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              { "glob": "**/*", "ignore": ["*.js"], "input": "node_modules/@nasaworldwind/worldwind/build/dist", "output": "/" }
             ],
             "styles": [
               "src/styles.scss"

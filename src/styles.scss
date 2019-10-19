@@ -18,6 +18,7 @@ $theme: $earth-timelapse-theme;
 @include mat-input-theme($theme);
 @include mat-button-theme($theme);
 @include mat-form-field-theme($theme);
+@include mat-slider-theme($theme);
 
 
 html, body { height: 100%; }

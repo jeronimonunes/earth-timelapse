@@ -1,1 +1,3 @@
-<canvas id="globe" #globe>
+<h1>{{title$ | async}}</h1>
+<canvas id="globe" #globe></canvas>
+<mat-slider tickInterval="auto" [thumbLabel]="true" [displayWith]="displayDate" [min]="sliderMin$ | async" [max]="sliderMax$ | async"></mat-slider>

@@ -4,7 +4,6 @@ import '@nasaworldwind/worldwind/build/dist/worldwind.js';
 
 declare const WorldWind: any;
 export const WorldWindExport = WorldWind;
-const Logger = WorldWind.Logger;
 
 // tslint:disable: only-arrow-functions
 

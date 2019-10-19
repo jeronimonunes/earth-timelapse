@@ -2,7 +2,7 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount } from 'rxjs/operators';
+import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount, filter } from 'rxjs/operators';
 import { of, combineLatest } from 'rxjs';
 
 import { FormControl } from '@angular/forms';
@@ -19,12 +19,7 @@ export class TimelapseComponent implements AfterViewInit {
 
   selectedDate = new FormControl(0);
 
-  capabilities$ = this.httpClient.get(
-    'https://neo.sci.gsfc.nasa.gov/wms/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0',
-    { responseType: 'text' }
-  ).pipe(
-    map(text => new DOMParser().parseFromString(text, 'text/xml')),
-  );
+  capabilities$ = this.route.data.pipe(pluck('capabilities'), filter(c => !!c));
 
   wmsCapabilities$ = this.capabilities$.pipe(map(capabilities => new WorldWind.WmsCapabilities(capabilities)));
 
@@ -37,6 +32,7 @@ export class TimelapseComponent implements AfterViewInit {
 
   metadata$ = this.route.params.pipe(
     pluck('name'),
+    filter(name => !!name),
     mergeMap(name =>
       this.httpClient.get(`https://neo.sci.gsfc.nasa.gov/servlet/FGDCMetadata?datasetId=${name}`, { responseType: 'text' })
     ),

@@ -20,8 +20,7 @@ import { HttpClientModule } from '@angular/common/http';
     MatInputModule,
     MatFormFieldModule,
     MatButtonModule,
-    MatAutocompleteModule,
-    HttpClientModule
+    MatAutocompleteModule
   ]
 })
 export class HomeModule { }

@@ -1,9 +1,18 @@
 import { Component } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { map, shareReplay, startWith } from 'rxjs/operators';
+import { map, shareReplay, startWith, pluck, filter } from 'rxjs/operators';
 import { combineLatest } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+
+interface Layer {
+  title: string;
+  name: string;
+}
+
+interface Group {
+  title: string;
+  items: Layer[];
+}
 
 @Component({
   selector: 'app-home',
@@ -17,52 +26,84 @@ export class HomeComponent {
     c => typeof (c.value) === 'string' ? { type: true } : null
   ]));
 
-  // tslint:disable-next-line: max-line-length
-  allLayers$ = this.httpClient.get('https://neo.sci.gsfc.nasa.gov/wms/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0', { responseType: 'text' })
-    .pipe(
-      map(text => new DOMParser().parseFromString(text, 'text/xml')),
-      map(xml => xml.querySelectorAll('Capability>Layer>Layer')),
-      map(nodeList => Array.from(nodeList)),
-      shareReplay(1)
-    );
+  layerGroups$ = this.route.data.pipe(
+    pluck('capabilities'),
+    filter(v => !!v),
+    map((xml: Document) => this.workLayers(xml)),
+    shareReplay(1)
+  );
 
-  options$ = combineLatest([this.allLayers$, this.what.valueChanges.pipe(startWith(this.what.value))])
-    .pipe(
-      map(([layers, text]) => layers.filter(layer => {
-        const title = layer.querySelector('Title')!.innerHTML;
-        if (typeof (text) === 'string') {
-          return title.toLocaleLowerCase().indexOf(text.toLocaleLowerCase()) !== -1;
-        } else {
-          return layer === text;
-        }
-      }))
-    );
+  typingText$ = this.what.valueChanges.pipe(
+    startWith(this.what.value),
+    map(obj => {
+      if (!obj) {
+        return '';
+      } else if (typeof (obj) === 'string') {
+        return obj.toLocaleLowerCase();
+      } else {
+        return (obj.title || '').toLocaleLowerCase();
+      }
+    })
+  );
+
+  options$ = combineLatest([this.layerGroups$, this.typingText$])
+    .pipe(map(([groups, text]) => {
+      return groups.map(group => {
+        const items: any[] = group.items.filter(item => {
+          return item.title.toLocaleLowerCase().indexOf(text) !== -1;
+        });
+        return { ...group, items };
+      }).filter(group => group.items.length);
+    }));
 
   constructor(
     private router: Router,
-    private httpClient: HttpClient
+    private route: ActivatedRoute
   ) {
-    this.httpClient.get('https://neo.sci.gsfc.nasa.gov/wms/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0', { responseType: 'text' })
-      .pipe(
-        map(text => new DOMParser().parseFromString(text, 'text/xml')),
-      ).subscribe((xml => {
-        let objectAny = {};
-        console.log(xml.querySelector('Title'));
-        console.log(xml);
-      }));
   }
 
-  displayFn(option: Element | string) {
-    if (typeof (option) === 'string') {
-      return option;
+  workLayers(xml: Document): Group[] {
+    const groups = new Map<string, Layer[]>();
+    for (const name of Array.from(xml.querySelectorAll('Layer>Name'))) {
+      const layer = name.parentElement!;
+      const group = this.findGroup(layer);
+      let items = groups.get(group);
+      if (!items) {
+        groups.set(group, items = []);
+      }
+      items.push({
+        name: name.innerHTML,
+        title: layer.querySelector('Title')!.innerHTML
+      });
+    }
+    return Array.from(groups.entries()).map(([title, items]) => ({ title, items }));
+  }
+
+  findGroup(layer: Element): string {
+    const parent = layer.parentElement!;
+    if (parent.parentElement!.tagName !== 'Layer') {
+      return '';
     } else {
-      return option.querySelector('Title')!.innerHTML;
+      const parentGroup = this.findGroup(parent);
+      const localGroup = parent.querySelector('Title')!.innerHTML;
+      if (parentGroup) {
+        return this.findGroup(parent) + ' - ' + localGroup;
+      } else {
+        return localGroup;
+      }
     }
   }
 
-  go(option: Element) {
-    const name = option.querySelector('Name')!.innerHTML;
-    this.router.navigateByUrl('/timelapse/' + name);
+  displayFn(option: Layer | string) {
+    if (typeof (option) === 'string') {
+      return option;
+    } else {
+      return option.title;
+    }
+  }
+
+  go(option: Layer) {
+    this.router.navigateByUrl('/timelapse/' + option.name);
   }
 
 }

@@ -3,8 +3,11 @@
   <input type="text" matInput placeholder="What" [formControl]="what" [matAutocomplete]="auto">
 
   <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" [autoActiveFirstOption]="true">
-    <mat-option *ngFor="let option of options$ | async" [value]="option">{{option.querySelector('Title')!.innerHTML}}
-    </mat-option>
+    <mat-optgroup *ngFor="let group of options$ | async" [label]="group.title">
+      <mat-option *ngFor="let layer of group.items" [value]="layer">
+        {{layer.title}}
+      </mat-option>
+    </mat-optgroup>
   </mat-autocomplete>
 </mat-form-field>
 

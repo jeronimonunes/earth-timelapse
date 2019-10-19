@@ -2,10 +2,11 @@ import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, tap, mergeMap } from 'rxjs/operators';
-import { of, Subscription } from 'rxjs';
+import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount } from 'rxjs/operators';
+import { of, combineLatest } from 'rxjs';
 
 import '@nasaworldwind/worldwind';
+import { FormControl } from '@angular/forms';
 
 declare var WorldWind: any;
 
@@ -18,7 +19,23 @@ let bkpDates: string[] = [];
 })
 export class TimelapseComponent implements AfterViewInit {
 
-  datesSubscription!: Subscription;
+  selectedDate = new FormControl(0);
+
+  capabilities$ = this.httpClient.get(
+    'https://neo.sci.gsfc.nasa.gov/wms/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0',
+    { responseType: 'text' }
+  ).pipe(
+    map(text => new DOMParser().parseFromString(text, 'text/xml')),
+  );
+
+  wmsCapabilities$ = this.capabilities$.pipe(map(capabilities => new WorldWind.WmsCapabilities(capabilities)));
+
+  wmsLayerCapabilities$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))])
+    .pipe(map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name)));
+
+  wmsConfig$ = this.wmsLayerCapabilities$.pipe(
+    map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities))
+  );
 
   metadata$ = this.route.params.pipe(
     pluck('name'),
@@ -66,10 +83,30 @@ export class TimelapseComponent implements AfterViewInit {
     return '';
   }
 
-  ngAfterViewInit() {
+  async ngAfterViewInit() {
     const wwd = new WorldWind.WorldWindow('globe');
-    wwd.addLayer(new WorldWind.BMNGOneImageLayer());
-    wwd.addLayer(new WorldWind.BMNGLandsatLayer());
+
+    combineLatest([this.wmsConfig$, this.selectedDate.valueChanges.pipe(startWith(this.selectedDate.value))])
+      .pipe(
+        map(([wmsConfig, dateIndex]) => {
+          const date = bkpDates[Math.round(dateIndex)];
+          if (wmsConfig && typeof (date) === 'string') {
+            const formatedDate = date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8);
+            return new WorldWind.WmsLayer(wmsConfig, formatedDate);
+          }
+          return null;
+        }),
+        startWith(null),
+        bufferCount(2, 1)
+      ).subscribe(([oldLayer, newLayer]) => {
+        if (oldLayer) {
+          wwd.removeLayer(oldLayer);
+        }
+        if (newLayer) {
+          wwd.addLayer(newLayer);
+        }
+        wwd.redraw();
+      });
   }
 
 }

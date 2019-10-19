@@ -1,0 +1,12 @@
+<h1>How did it change?</h1>
+<mat-form-field>
+  <input type="text" matInput placeholder="What" [formControl]="what" [matAutocomplete]="auto">
+
+  <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" [autoActiveFirstOption]="true">
+    <mat-option *ngFor="let option of options$ | async" [value]="option">{{option.querySelector('Title')!.innerHTML}}
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>
+
+<button mat-button mat-raised-button color="primary" [disabled]="!what.valid" (click)="go(what.value)">Show me what you
+  got!</button>

@@ -1,8 +1,1 @@
-<h1>How did it change?</h1>
-<mat-form-field>
-  <input type="text" matInput placeholder="What" [formControl]="what" [matAutocomplete]="auto">
-</mat-form-field>
-
-<mat-autocomplete #auto="matAutocomplete">
-  <mat-option *ngFor="let option of options$ | async" [value]="option">{{option.querySelector('Title').innerHTML}}</mat-option>
-</mat-autocomplete>
+<router-outlet></router-outlet>

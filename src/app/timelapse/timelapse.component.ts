@@ -2,8 +2,8 @@ import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@ang
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, mergeMap, filter, tap, take, timeout } from 'rxjs/operators';
-import { combineLatest, fromEvent, Observable, interval, BehaviorSubject, Subscription } from 'rxjs';
+import { pluck, map, shareReplay, mergeMap, filter, take } from 'rxjs/operators';
+import { combineLatest, fromEvent, interval, Subscription } from 'rxjs';
 
 import { FormControl } from '@angular/forms';
 import { ImageCacheService, WorldWindExport as WorldWind } from './services/image-cache.service';
@@ -77,7 +77,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
     cvs.width = window.innerWidth;
     cvs.height = window.innerHeight * 30 / 100;
     this.chart = new Chart(cvs, {
-      type: 'line',
+      type: 'bar',
       data: {
         datasets: [{
           data: [],

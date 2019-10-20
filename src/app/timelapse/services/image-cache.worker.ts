@@ -2,7 +2,7 @@
 
 import { Observable, fromEvent, combineLatest } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { map, filter, flatMap, shareReplay,tap } from 'rxjs/operators';
+import { map, filter, flatMap, shareReplay } from 'rxjs/operators';
 import { rgb2hsv } from './rgb2hsv';
 
 const messages$ = fromEvent<MessageEvent>(self, 'message');

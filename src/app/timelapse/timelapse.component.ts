@@ -1,12 +1,14 @@
-import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount, filter } from 'rxjs/operators';
-import { of, combineLatest } from 'rxjs';
+import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount, filter, switchMap } from 'rxjs/operators';
+import { of, combineLatest, Subscription } from 'rxjs';
 
 import { FormControl } from '@angular/forms';
 import { ImageCacheService, WorldWindExport as WorldWind } from './services/image-cache.service';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { LoadingComponent } from '../loading/loading.component';
 
 let bkpDates: string[] = [];
 
@@ -15,20 +17,24 @@ let bkpDates: string[] = [];
   templateUrl: './timelapse.component.html',
   styleUrls: ['./timelapse.component.scss']
 })
-export class TimelapseComponent implements AfterViewInit {
+export class TimelapseComponent implements AfterViewInit, OnDestroy {
+
+  drawSubscription: Subscription | undefined;
+  preloadImagesSubscription: Subscription | undefined;
+  loadingRef: MatDialogRef<LoadingComponent> | null = null;
 
   selectedDate = new FormControl(0);
 
-  capabilities$ = this.route.data.pipe(pluck('capabilities'), filter(c => !!c));
-
-  wmsCapabilities$ = this.capabilities$.pipe(map(capabilities => new WorldWind.WmsCapabilities(capabilities)));
-
-  wmsLayerCapabilities$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))])
-    .pipe(map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name)));
-
-  wmsConfig$ = this.wmsLayerCapabilities$.pipe(
-    map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities))
+  wmsCapabilities$ = this.route.data.pipe(
+    pluck('capabilities'),
+    map(capabilities => new WorldWind.WmsCapabilities(capabilities))
   );
+
+  wmsConfig$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))])
+    .pipe(
+      map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name)),
+      map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities))
+    );
 
   metadata$ = this.route.params.pipe(
     pluck('name'),
@@ -45,7 +51,10 @@ export class TimelapseComponent implements AfterViewInit {
   dates$ = this.metadata$.pipe(
     map(xml => xml.querySelectorAll('idinfo>timeperd>timeinfo>mdattim>sngdate')),
     map(sngdates => Array.from(sngdates)),
-    map(sngdates => sngdates.map(sngdate => sngdate.querySelector('caldate')!.innerHTML)),
+    map(sngdates => sngdates.map(sngdate => {
+      const text = sngdate.querySelector('caldate')!.innerHTML;
+      return text.substring(0, 4) + '-' + text.substring(4, 6) + '-' + text.substring(6, 8);
+    })),
     shareReplay(1)
   );
 
@@ -58,7 +67,8 @@ export class TimelapseComponent implements AfterViewInit {
   constructor(
     private route: ActivatedRoute,
     private imageCacheService: ImageCacheService,
-    private httpClient: HttpClient
+    private httpClient: HttpClient,
+    private matDialog: MatDialog
   ) { }
 
   @ViewChild('globe', { static: true }) set globe(globe: ElementRef<HTMLCanvasElement>) {
@@ -70,10 +80,7 @@ export class TimelapseComponent implements AfterViewInit {
 
   displayDate(value: number) {
     if (bkpDates) {
-      const v = bkpDates[value];
-      if (typeof (v) === 'string') {
-        return v.substring(0, 4) + '-' + v.substring(4, 6) + '-' + v.substring(6, 8);
-      }
+      return bkpDates[value];
     }
     return '';
   }
@@ -81,27 +88,57 @@ export class TimelapseComponent implements AfterViewInit {
   async ngAfterViewInit() {
     const wwd = new WorldWind.WorldWindow('globe');
 
-    combineLatest([this.wmsConfig$, this.selectedDate.valueChanges.pipe(startWith(this.selectedDate.value))])
-      .pipe(
-        map(([wmsConfig, dateIndex]) => {
-          const date = bkpDates[Math.round(dateIndex)];
-          if (wmsConfig && typeof (date) === 'string') {
-            const formatedDate = date.substring(0, 4) + '-' + date.substring(4, 6) + '-' + date.substring(6, 8);
-            return new WorldWind.WmsLayer(wmsConfig, formatedDate);
-          }
-          return null;
-        }),
-        startWith(null),
-        bufferCount(2, 1)
-      ).subscribe(([oldLayer, newLayer]) => {
-        if (oldLayer) {
-          wwd.removeLayer(oldLayer);
+    this.preloadImagesSubscription = combineLatest([
+      this.route.params.pipe(pluck('name')),
+      this.dates$
+    ]).pipe(
+      switchMap(([name, dates]) => this.imageCacheService.newWorker(name, dates))
+    ).subscribe(({ type }) => {
+      if (type === 'init') {
+        if (this.loadingRef) {
+          this.loadingRef.close();
         }
-        if (newLayer) {
-          wwd.addLayer(newLayer);
+        this.loadingRef = this.matDialog.open(LoadingComponent, { disableClose: true });
+      } else if (type === 'success') {
+        if (this.loadingRef) {
+          this.loadingRef.close();
         }
-        wwd.redraw();
-      });
+        this.loadingRef = null;
+      }
+    });
+
+    this.drawSubscription = combineLatest([
+      this.wmsConfig$,
+      this.dates$,
+      this.selectedDate.valueChanges.pipe(startWith(this.selectedDate.value))
+    ]).pipe(
+      map(([wmsConfig, dates, dateIndex]) => {
+        const date = dates[Math.round(dateIndex)];
+        if (wmsConfig && typeof (date) === 'string') {
+          return new WorldWind.WmsLayer(wmsConfig, date);
+        }
+        return null;
+      }),
+      startWith(null),
+      bufferCount(2, 1)
+    ).subscribe(([oldLayer, newLayer]) => {
+      if (oldLayer) {
+        wwd.removeLayer(oldLayer);
+      }
+      if (newLayer) {
+        wwd.addLayer(newLayer);
+      }
+      wwd.redraw();
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.drawSubscription) {
+      this.drawSubscription.unsubscribe();
+    }
+    if (this.preloadImagesSubscription) {
+      this.preloadImagesSubscription.unsubscribe();
+    }
   }
 
 }

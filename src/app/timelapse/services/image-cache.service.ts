@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import '@nasaworldwind/worldwind/build/dist/worldwind.js';
+import { Observable } from 'rxjs';
 
 declare const WorldWind: any;
 export const WorldWindExport = WorldWind;
@@ -97,7 +97,7 @@ export class ImageCacheService {
     }
   }
 
-  constructor(private httpClient: HttpClient) {
+  constructor() {
 
     const service = this;
 
@@ -110,40 +110,51 @@ export class ImageCacheService {
         this.currentRetrievals.push(tile.imagePath);
 
         const url: any = this.resourceUrlForTile(tile, this.retrievalImageFormat);
-        const urlObj = new URL(url);
-        await service.cacheImage(urlObj.searchParams.get('layers'), urlObj.searchParams.get('time'));
-        let image = await service.getCachedImage(url);
-        if (!image) {
-          const img = await service.preloadImage(url);
-          image = await createImageBitmap(img);
-        }
-        const cache = dc.gpuResourceCache;
-        const canvas = dc.currentGlContext.canvas;
+        // await service.cacheImage(urlObj.searchParams.get('layers'), urlObj.searchParams.get('time'));
         const layer = this;
-
-        const texture = layer.createTexture(dc, tile, image);
-        layer.removeFromCurrentRetrievals(tile.imagePath);
-        if (texture) {
-          cache.putResource(tile.imagePath, texture, texture.size);
-
-          layer.currentTilesInvalid = true;
-          layer.absentResourceList.unmarkResourceAbsent(tile.imagePath);
-
-          if (!suppressRedraw) {
-            // Send an event to request a redraw.
-            const e = document.createEvent('Event');
-            e.initEvent(WorldWind.REDRAW_EVENT_TYPE, true, true);
-            canvas.dispatchEvent(e);
+        try {
+          let image = await service.getCachedImage(url);
+          if (!image) {
+            const img = await service.preloadImage(url);
+            image = await createImageBitmap(img);
           }
-        }
+          const cache = dc.gpuResourceCache;
+          const canvas = dc.currentGlContext.canvas;
 
-        /*onerror = function () {
-          layer.removeFromCurrentRetrievals(imagePath);
-          layer.absentResourceList.markResourceAbsent(imagePath);
-          Logger.log(Logger.LEVEL_WARNING, 'Image retrieval failed: ' + url);
-        };*/
+          const texture = layer.createTexture(dc, tile, image);
+          layer.removeFromCurrentRetrievals(tile.imagePath);
+          if (texture) {
+            cache.putResource(tile.imagePath, texture, texture.size);
+
+            layer.currentTilesInvalid = true;
+            layer.absentResourceList.unmarkResourceAbsent(tile.imagePath);
+
+            if (!suppressRedraw) {
+              // Send an event to request a redraw.
+              const e = document.createEvent('Event');
+              e.initEvent(WorldWind.REDRAW_EVENT_TYPE, true, true);
+              canvas.dispatchEvent(e);
+            }
+          }
+        } catch (e) {
+          layer.removeFromCurrentRetrievals(layer.imagePath);
+          layer.absentResourceList.markResourceAbsent(layer.imagePath);
+        }
       }
     };
+  }
+
+  newWorker(name: string, dates: string[]) {
+    return new Observable<any>(observer => {
+      const worker = new Worker('./image-cache.worker', { type: 'module' });
+      worker.postMessage({ name, dates });
+      worker.onmessage = ({ data }) => {
+        observer.next(data);
+      };
+      return () => {
+        worker.terminate();
+      };
+    });
   }
 
 }

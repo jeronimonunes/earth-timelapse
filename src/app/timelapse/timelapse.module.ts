@@ -4,9 +4,9 @@ import { CommonModule } from '@angular/common';
 import { TimelapseRoutingModule } from './timelapse-routing.module';
 import { TimelapseComponent } from './timelapse.component';
 import { MatSliderModule } from '@angular/material/slider';
-import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ImageCacheService } from './services/image-cache.service';
+import { LoadingModule } from '../loading/loading.module';
 
 
 @NgModule({
@@ -15,8 +15,8 @@ import { ImageCacheService } from './services/image-cache.service';
     CommonModule,
     ReactiveFormsModule,
     TimelapseRoutingModule,
-    MatSliderModule,
-    HttpClientModule
+    LoadingModule,
+    MatSliderModule
   ],
   providers: [ImageCacheService]
 })

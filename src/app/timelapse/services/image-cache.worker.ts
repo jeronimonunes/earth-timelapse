@@ -2,7 +2,7 @@
 
 import { Observable, fromEvent, combineLatest } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { map, filter, flatMap, takeWhile } from 'rxjs/operators';
+import { map, filter, flatMap, shareReplay,tap } from 'rxjs/operators';
 import { rgb2hsv } from './rgb2hsv';
 
 const messages$ = fromEvent<MessageEvent>(self, 'message');
@@ -10,13 +10,15 @@ const messages$ = fromEvent<MessageEvent>(self, 'message');
 const dates$ = messages$.pipe(
   map(({ data }) => data),
   filter(({ type }) => type === 'dates'),
-  map(({ value }) => value)
+  map(({ value }) => value),
+  shareReplay(1)
 );
 
 const limit$ = messages$.pipe(
   map(({ data }) => data),
   filter(({ type }) => type === 'limit'),
-  map(({ value }) => value)
+  map(({ value }) => value),
+  shareReplay(1)
 );
 
 const name$ = messages$.pipe(
@@ -27,21 +29,21 @@ const name$ = messages$.pipe(
 
 const next$ = messages$.pipe(
   map(({ data }) => data),
-  filter(({ type }) => type === 'next')
-)
+  filter(({ type }) => type === 'next'),
+  map((val, idx) => idx)
+);
 
-const currentItem$ = combineLatest([next$, limit$, dates$]).pipe(
-  map(([next, N, dates], idx) => {
-    let step = dates.length / N;
-    step = Math.ceil(step);
-    const i = idx * step;
-    return [dates, i];
+const date$ = combineLatest([next$, dates$, limit$]).pipe(
+  map(([next, dates, limit]) => {
+    const step = Math.ceil(dates.length / limit);
+    const idx = next * step;
+    return [dates, idx];
   }),
-  takeWhile(([array, i]) => i < array.length),
+  filter(([dates, idx]) => idx < dates.length),
   map(([array, i]) => array[i])
-)
+);
 
-const pictureURL = combineLatest([currentItem$, name$]).pipe(
+const pictureURL = combineLatest([date$, name$]).pipe(
   map(([date, name]) => {
     const url = new URL('https://neo.sci.gsfc.nasa.gov/wms/wms');
     url.searchParams.set('service', 'WMS');

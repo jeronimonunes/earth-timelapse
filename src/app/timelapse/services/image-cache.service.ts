@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import '@nasaworldwind/worldwind/build/dist/worldwind.js';
-import { Observable } from 'rxjs';
 
 declare const WorldWind: any;
 export const WorldWindExport = WorldWind;
@@ -142,19 +141,6 @@ export class ImageCacheService {
         }
       }
     };
-  }
-
-  newWorker(name: string, dates: string[]) {
-    return new Observable<any>(observer => {
-      const worker = new Worker('./image-cache.worker', { type: 'module' });
-      worker.postMessage({ name, dates });
-      worker.onmessage = ({ data }) => {
-        observer.next(data);
-      };
-      return () => {
-        worker.terminate();
-      };
-    });
   }
 
 }

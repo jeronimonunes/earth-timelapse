@@ -1,15 +1,27 @@
 :host {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+  display: grid;
+  grid-template-rows: 10vh 60vh 30vh;
+  grid-template-columns: 100vw;
+  place-content: center;
 }
 
-canvas {
-  height: calc(100vh - 100px);
+h1 {
+  place-self: center;
+  margin: 0;
+  padding: 0;
 }
 
-mat-slider {
-  width: 100%;
-  max-width: 500px;
+#globeDiv {
+  place-self: center;
+  height: 60vh;
+}
+
+#globe {
+  width: auto;
+  height: 100%;
+}
+
+
+#graph {
+  height: 30vh;
 }

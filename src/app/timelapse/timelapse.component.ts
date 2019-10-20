@@ -2,15 +2,15 @@ import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@ang
 
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, tap, mergeMap, startWith, bufferCount, filter, switchMap } from 'rxjs/operators';
-import { of, combineLatest, Subscription } from 'rxjs';
+import { pluck, map, shareReplay, mergeMap, filter, tap } from 'rxjs/operators';
+import { combineLatest, fromEvent, Observable, interval } from 'rxjs';
 
 import { FormControl } from '@angular/forms';
 import { ImageCacheService, WorldWindExport as WorldWind } from './services/image-cache.service';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { LoadingComponent } from '../loading/loading.component';
-
-let bkpDates: string[] = [];
+import { Chart } from 'chart.js';
+import { bruno } from './colors';
 
 @Component({
   selector: 'app-timelapse',
@@ -19,11 +19,8 @@ let bkpDates: string[] = [];
 })
 export class TimelapseComponent implements AfterViewInit, OnDestroy {
 
-  drawSubscription: Subscription | undefined;
-  preloadImagesSubscription: Subscription | undefined;
-  loadingRef: MatDialogRef<LoadingComponent> | null = null;
-
-  selectedDate = new FormControl(0);
+  selectedDate = new FormControl(null);
+  layers: any = [];
 
   wmsCapabilities$ = this.route.data.pipe(
     pluck('capabilities'),
@@ -33,7 +30,8 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   wmsConfig$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))])
     .pipe(
       map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name)),
-      map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities))
+      map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities)),
+      shareReplay(1)
     );
 
   metadata$ = this.route.params.pipe(
@@ -58,11 +56,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
     shareReplay(1)
   );
 
-  sliderMin$ = of(0);
-  sliderMax$ = this.dates$.pipe(
-    tap(dates => bkpDates = dates),
-    map(dates => dates.length - 1)
-  );
+  chart: Chart | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -73,71 +67,108 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('globe', { static: true }) set globe(globe: ElementRef<HTMLCanvasElement>) {
     const cvs = globe.nativeElement;
-    const size = Math.min(window.innerWidth, window.innerHeight);
+    const size = 600;
     cvs.width = size;
     cvs.height = size;
   }
 
-  displayDate(value: number) {
-    if (bkpDates) {
-      return bkpDates[value];
-    }
-    return '';
+  @ViewChild('graph', { static: true }) set graph(graph: ElementRef<HTMLCanvasElement>) {
+    const cvs = graph.nativeElement;
+    cvs.width = window.innerWidth;
+    cvs.height = window.innerHeight * 30 / 100;
+    this.chart = new Chart(cvs, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          fill: false,
+          ...bruno
+        }]
+      },
+      options: {
+        legend: {
+          display: false
+        }
+      }
+    });
   }
 
+  wwd: any;
+
   async ngAfterViewInit() {
-    const wwd = new WorldWind.WorldWindow('globe');
+    const loading = this.matDialog.open(LoadingComponent, { disableClose: true });
+    try {
+      this.wwd = new WorldWind.WorldWindow('globe');
 
-    this.preloadImagesSubscription = combineLatest([
-      this.route.params.pipe(pluck('name')),
-      this.dates$
-    ]).pipe(
-      switchMap(([name, dates]) => this.imageCacheService.newWorker(name, dates))
-    ).subscribe(({ type }) => {
-      if (type === 'init') {
-        if (this.loadingRef) {
-          this.loadingRef.close();
-        }
-        this.loadingRef = this.matDialog.open(LoadingComponent, { disableClose: true });
-      } else if (type === 'success') {
-        if (this.loadingRef) {
-          this.loadingRef.close();
-        }
-        this.loadingRef = null;
-      }
-    });
+      const worker = new Worker('./services/image-cache.worker', { type: 'module' });
 
-    this.drawSubscription = combineLatest([
-      this.wmsConfig$,
-      this.dates$,
-      this.selectedDate.valueChanges.pipe(startWith(this.selectedDate.value))
-    ]).pipe(
-      map(([wmsConfig, dates, dateIndex]) => {
-        const date = dates[Math.round(dateIndex)];
-        if (wmsConfig && typeof (date) === 'string') {
-          return new WorldWind.WmsLayer(wmsConfig, date);
-        }
-        return null;
-      }),
-      startWith(null),
-      bufferCount(2, 1)
-    ).subscribe(([oldLayer, newLayer]) => {
-      if (oldLayer) {
-        wwd.removeLayer(oldLayer);
-      }
-      if (newLayer) {
-        wwd.addLayer(newLayer);
-      }
-      wwd.redraw();
-    });
+      interval(1000).subscribe(a => {
+        worker.postMessage({ type: 'next' });
+      });
+
+      const sendingInitalData = combineLatest([
+        this.route.params.pipe(pluck('name')),
+        this.dates$
+      ]).subscribe(([name, dates]) => {
+
+        this.wwd.addLayer(new WorldWind.BMNGOneImageLayer());
+        this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
+        this.wwd.redraw();
+
+        worker.postMessage({
+          type: 'dates',
+          value: dates
+        });
+        worker.postMessage({
+          type: 'limit',
+          value: 30
+        });
+        worker.postMessage({
+          type: 'name',
+          value: name
+        });
+      });
+
+      const workerData$ = fromEvent<MessageEvent>(worker, 'message').pipe(
+        map(({ data }) => data.value),
+      ) as Observable<{ average: number, bitmap: ImageBitmap, date: string }>;
+
+      const criadordeLayer = combineLatest([workerData$, this.wmsConfig$])
+        .subscribe(([{ average, bitmap, date }, wmsConfig]) => {
+          if (this.chart) {
+            this.chart.data.labels!.push(date);
+            this.chart.data.datasets![0]!.data!.push(average);
+            this.chart.update();
+          }
+          const layer = new WorldWind.WmsLayer(wmsConfig, date);
+          this.layers.push(layer);
+        });
+    } finally {
+      loading.close();
+    }
   }
 
   ngOnDestroy() {
-    if (this.drawSubscription) {
-      this.drawSubscription.unsubscribe();
-    }
-    if (this.preloadImagesSubscription) {
-      this.preloadImagesSubscription.unsubscribe();
+
+  }
+
+  oldLayer: any;
+
+  chartClicked(evt: Event) {
+    if (this.chart) {
+      const points: any = this.chart.getElementAtEvent(evt);
+      if (points.length) {
+        const point = points[0]._index;
+        if(this.oldLayer) {
+          this.wwd.removeLayer(this.oldLayer);
+        }
+        // old layer
+        this.oldLayer = this.layers[point];
+        this.wwd.addLayer(this.oldLayer);
+        this.wwd.redraw();
+        console.log('layer');
+      }
     }
   }
 

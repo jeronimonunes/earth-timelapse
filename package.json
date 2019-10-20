@@ -24,6 +24,8 @@
     "@angular/router": "~8.2.11",
     "@angular/service-worker": "~8.2.11",
     "@nasaworldwind/worldwind": "^0.9.0",
+    "@types/chart.js": "^2.8.7",
+    "chart.js": "^2.8.0",
     "hammerjs": "^2.0.8",
     "idb": "^4.0.5",
     "rxjs": "~6.5.0",

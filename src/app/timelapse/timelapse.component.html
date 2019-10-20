@@ -1,3 +1,7 @@
 <h1>{{title$ | async}}</h1>
-<canvas id="globe" #globe></canvas>
-<mat-slider [formControl]="selectedDate" tickInterval="auto" [thumbLabel]="true" [displayWith]="displayDate" [min]="sliderMin$ | async" [max]="sliderMax$ | async"></mat-slider>
+<div id="globeDiv">
+  <canvas id="globe" #globe></canvas>
+</div>
+<div id="graph">
+  <canvas #graph (click)="chartClicked($event)"></canvas>
+</div>

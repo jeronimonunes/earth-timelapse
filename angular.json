@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/earth-timelapse",
+            "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -26,7 +26,14 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              { "glob": "**/*", "ignore": ["*.js"], "input": "node_modules/@nasaworldwind/worldwind/build/dist", "output": "/" },
+              {
+                "glob": "**/*",
+                "ignore": [
+                  "*.js"
+                ],
+                "input": "node_modules/@nasaworldwind/worldwind/build/dist",
+                "output": "/"
+              },
               "src/manifest.webmanifest"
             ],
             "styles": [
@@ -96,7 +103,14 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              { "glob": "**/*", "ignore": ["*.js"], "input": "node_modules/@nasaworldwind/worldwind/build/dist", "output": "/" },
+              {
+                "glob": "**/*",
+                "ignore": [
+                  "*.js"
+                ],
+                "input": "node_modules/@nasaworldwind/worldwind/build/dist",
+                "output": "/"
+              },
               "src/manifest.webmanifest"
             ],
             "styles": [
@@ -130,8 +144,13 @@
               "devServerTarget": "earth-timelapse:serve:production"
             }
           }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {}
         }
       }
-    }},
+    }
+  },
   "defaultProject": "earth-timelapse"
 }

@@ -1,11 +1,14 @@
 :host {
   display: grid;
-  grid-template-rows: 10vh 60vh 30vh;
+  grid-template-rows: 100px 1fr 200px;
   grid-template-columns: 100vw;
   place-content: center;
+  height: 100vh;
+  width: 100vw;
 }
 
 h1 {
+  text-align: center;
   place-self: center;
   margin: 0;
   padding: 0;
@@ -13,7 +16,7 @@ h1 {
 
 #globeDiv {
   place-self: center;
-  height: 60vh;
+  height: calc(100vh - 100px - 200px);
 }
 
 #globe {
@@ -21,7 +24,8 @@ h1 {
   height: 100%;
 }
 
-
-#graph {
-  height: 30vh;
+#graphDiv {
+  display: grid;
+  place-content: center;
+  margin: 32px;
 }

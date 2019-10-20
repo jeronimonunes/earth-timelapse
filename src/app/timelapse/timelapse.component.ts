@@ -75,7 +75,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   @ViewChild('graph', { static: true }) set graph(graph: ElementRef<HTMLCanvasElement>) {
     const cvs = graph.nativeElement;
     cvs.width = window.innerWidth;
-    cvs.height = window.innerHeight * 30 / 100;
+    cvs.height = 200;
     this.chart = new Chart(cvs, {
       type: 'bar',
       data: {

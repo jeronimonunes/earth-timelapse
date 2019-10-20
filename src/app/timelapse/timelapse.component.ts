@@ -142,6 +142,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
             this.chart.update();
           }
           const layer = new WorldWind.WmsLayer(wmsConfig, date);
+          layer.imageBitmap = bitmap;
           this.layers.push(layer);
         });
     } finally {

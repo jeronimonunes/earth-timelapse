@@ -8,6 +8,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 import { HttpClientModule } from '@angular/common/http';
 import { DatabaseService } from './services/database.service';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { WorldWindCapabilitiesService } from './services/world-wind-capabilities.service';
 
 @NgModule({
@@ -18,6 +19,7 @@ import { WorldWindCapabilitiesService } from './services/world-wind-capabilities
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
+    MatSnackBarModule,
     BrowserAnimationsModule,
     ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production })
   ],

@@ -1,4 +1,12 @@
-<h1>{{title$ | async}}</h1>
+<h1 *ngIf="title$ | async as title; else placeholder">
+  {{title}}
+  <a mat-button color="primary" aria-label="Home" routerLink="/">
+    <fa-icon [icon]="faEdit"></fa-icon>
+  </a>
+</h1>
+<ng-template #placeholder>
+  <div></div>
+</ng-template>
 <div id="globeDiv">
   <canvas id="globe" #globe></canvas>
 </div>

@@ -1,4 +1,4 @@
-type Color = number[];
+type Color = [number, number, number];
 
 export interface ChartJsColor {
     backgroundColor?: string;
@@ -9,7 +9,7 @@ export interface ChartJsColor {
     pointHoverBorderColor?: string;
 }
 
-const defaultColors = [
+const defaultColors: [number, number, number][] = [
     [255, 99, 132],
     [54, 162, 235],
     [255, 206, 86],
@@ -32,7 +32,7 @@ function getRandomInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function getRandomColor() {
+export function getRandomColor(): [number, number, number] {
     return [getRandomInt(0, 255), getRandomInt(0, 255), getRandomInt(0, 255)];
 }
 
@@ -59,10 +59,4 @@ export function getColors(count: number): ChartJsColor[] {
     return results;
 }
 
-export const purple = formatColor([120, 65, 120]);
-export const blue = formatColor([0, 145, 155]);
-export const green = formatColor([140, 204, 175]);
-export const red = formatColor([255, 99, 132]);
-export const black = formatColor([0, 0, 0]);
-
-export const bruno = formatColor([5, 10, 30]);
+export const blue = formatColor([5, 10, 30]);

@@ -10,7 +10,8 @@ import { ImageCacheService, WorldWindExport as WorldWind } from './services/imag
 import { MatDialog } from '@angular/material/dialog';
 import { LoadingComponent } from '../loading/loading.component';
 import { Chart } from 'chart.js';
-import { bruno } from './colors';
+import { blue } from './colors';
+import { faEdit } from '@fortawesome/free-regular-svg-icons';
 
 @Component({
   selector: 'app-timelapse',
@@ -18,6 +19,8 @@ import { bruno } from './colors';
   styleUrls: ['./timelapse.component.scss']
 })
 export class TimelapseComponent implements AfterViewInit, OnDestroy {
+
+  faEdit = faEdit;
 
   wmsCapabilities$ = this.route.data.pipe(
     pluck('capabilities'),
@@ -82,7 +85,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
         datasets: [{
           data: [],
           fill: false,
-          ...bruno
+          ...blue
         }]
       },
       options: {

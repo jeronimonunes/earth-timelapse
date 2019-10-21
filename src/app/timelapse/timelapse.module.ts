@@ -6,6 +6,8 @@ import { TimelapseComponent } from './timelapse.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ImageCacheService } from './services/image-cache.service';
 import { LoadingModule } from '../loading/loading.module';
+import { MatButtonModule } from '@angular/material/button';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
 
 @NgModule({
@@ -14,6 +16,8 @@ import { LoadingModule } from '../loading/loading.module';
     CommonModule,
     ReactiveFormsModule,
     TimelapseRoutingModule,
+    MatButtonModule,
+    FontAwesomeModule,
     LoadingModule
   ],
   providers: [ImageCacheService]

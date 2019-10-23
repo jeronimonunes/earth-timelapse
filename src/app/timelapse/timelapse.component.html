@@ -1,5 +1,5 @@
-<h1 *ngIf="title$ | async as title; else placeholder">
-  {{title}}
+<h1 *ngIf="layer$ | async as layer; else placeholder">
+  {{layer.title}}
   <a mat-button color="primary" aria-label="Home" routerLink="/">
     <fa-icon [icon]="faEdit"></fa-icon>
   </a>

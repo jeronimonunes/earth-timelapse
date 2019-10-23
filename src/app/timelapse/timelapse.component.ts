@@ -1,17 +1,16 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, shareReplay, mergeMap, filter, take } from 'rxjs/operators';
-import { combineLatest, fromEvent, interval, Subscription } from 'rxjs';
+import { pluck, map, take } from 'rxjs/operators';
+import { Subscription, combineLatest, fromEvent, interval } from 'rxjs';
 
-import { FormControl } from '@angular/forms';
-import { ImageCacheService, WorldWindExport as WorldWind } from './services/image-cache.service';
+import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
 import { MatDialog } from '@angular/material/dialog';
 import { LoadingComponent } from '../loading/loading.component';
 import { Chart } from 'chart.js';
 import { blue } from './colors';
 import { faEdit } from '@fortawesome/free-regular-svg-icons';
+import { DataMessage } from './services/data-message';
 
 @Component({
   selector: 'app-timelapse',
@@ -22,49 +21,16 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
 
   faEdit = faEdit;
 
-  wmsCapabilities$ = this.route.data.pipe(
-    pluck('capabilities'),
-    map(capabilities => new WorldWind.WmsCapabilities(capabilities))
-  );
-
-  wmsConfig$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))])
-    .pipe(
-      map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name)),
-      map(wmsLayerCapabilities => WorldWind.WmsLayer.formLayerConfiguration(wmsLayerCapabilities)),
-      shareReplay(1)
-    );
-
-  metadata$ = this.route.params.pipe(
-    pluck('name'),
-    filter(name => !!name),
-    mergeMap(name =>
-      this.httpClient.get(`https://neo.sci.gsfc.nasa.gov/servlet/FGDCMetadata?datasetId=${name}`, { responseType: 'text' })
-    ),
-    map(text => new DOMParser().parseFromString(text, 'text/xml')),
-    shareReplay(1)
-  );
-
-  title$ = this.metadata$.pipe(map(metadata => metadata.querySelector('title')!.innerHTML));
-
-  dates$ = this.metadata$.pipe(
-    map(xml => xml.querySelectorAll('idinfo>timeperd>timeinfo>mdattim>sngdate')),
-    map(sngdates => Array.from(sngdates)),
-    map(sngdates => sngdates.map(sngdate => {
-      const text = sngdate.querySelector('caldate')!.innerHTML;
-      return text.substring(0, 4) + '-' + text.substring(4, 6) + '-' + text.substring(6, 8);
-    }))
-  );
-
-  selectedDate = new FormControl(null);
-  layers: any = [];
+  layers: Layer[] = [];
   chart: Chart | null = null;
   theOneThatPlotsTheLayer: Subscription | undefined;
   theOneWhoAsksForLayers: Subscription | undefined;
 
+  wwd: any;
+  oldLayer: any;
+
   constructor(
     private route: ActivatedRoute,
-    private imageCacheService: ImageCacheService,
-    private httpClient: HttpClient,
     private matDialog: MatDialog
   ) { }
 
@@ -99,7 +65,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
           }],
           yAxes: [{
             ticks: {
-              display: false
+              display: true
             }
           }]
         }
@@ -107,53 +73,86 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  wwd: any;
+  wmsCapabilities$ = this.route.data.pipe(
+    pluck('capabilities'),
+    map(capabilities => new WorldWind.WmsCapabilities(capabilities))
+  );
+
+  layer$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))]).pipe(
+    map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name))
+  );
 
   async ngAfterViewInit() {
     const loading = this.matDialog.open(LoadingComponent, { disableClose: true });
     try {
+      /** Base globe */
       this.wwd = new WorldWind.WorldWindow('globe');
-
-      const worker = new Worker('./services/image-cache.worker', { type: 'module' });
-      const name = await this.route.params.pipe(pluck('name'), take(1)).toPromise();
-      const dates = await this.dates$.pipe(take(1)).toPromise();
-
       this.wwd.addLayer(new WorldWind.BMNGOneImageLayer());
       this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
       this.wwd.redraw();
 
-      worker.postMessage({
-        type: 'dates',
-        value: dates
-      });
+      const layer = await this.layer$.pipe(take(1)).toPromise();
+
+      const title: string = layer.title;
+      const name: string = layer.name;
+      const limit = 20;
+      const service = 'WMS';
+      const times: Date[] = [];
+
+      let rgb = null;
+      let gs = null;
+      let legendUrl = null;
+      for (const style of layer.styles) {
+        if (style.name === 'rgb') {
+          rgb = style;
+        } else if (style.name === 'gs') {
+          gs = style;
+        }
+      }
+      if (!rgb || !gs) {
+        // should error
+      } else {
+        for (const legend of rgb.legendUrls) { // why string?
+          legendUrl = legend.url;
+        }
+      }
+      const periods = WorldWind.WmsLayer.parseTimeDimensions(layer);
+      for (const period of periods) {
+        period.reset();
+        let time: Date | null = period.next();
+        while (time != null) {
+          times.push(time);
+          time = period.next();
+        }
+      }
+
+      const worker = new Worker('./services/image-cache.worker', { type: 'module' });
 
       worker.postMessage({
-        type: 'limit',
-        value: 20
-      });
-
-      worker.postMessage({
-        type: 'name',
-        value: name
+        type: 'data',
+        value: { times, limit, name, title, service, legendUrl } as DataMessage
       });
 
       const workerData$ = fromEvent<MessageEvent>(worker, 'message').pipe(
-        map(({ data }) => data.value as { average: number, bitmap: ImageBitmap, date: string }),
+        map(({ data }) => data.value as {
+          path: string, title: string, time: Date,
+          average: number, toRGB: any, toReal: any, bitmap: ImageBitmap
+        }),
       );
 
-      this.theOneThatPlotsTheLayer = combineLatest([workerData$, this.wmsConfig$])
-        .subscribe(async ([{ average, bitmap, date }, wmsConfig]) => {
+      this.theOneThatPlotsTheLayer = workerData$
+        .subscribe(async ({ path, title, time, average, toRGB, toReal, bitmap }) => {
           if (this.chart) {
             const datasets = this.chart.data.datasets![0]!;
             const data = datasets.data! as Chart.ChartPoint[];
             data.push({
-              t: new Date(date),
+              t: time,
               y: average
             });
+            data.sort((a: any, b: any) => a.t - b.t)
             this.chart.update();
           }
-          const layer = new WorldWind.WmsLayer(wmsConfig, date);
-          layer.imageBitmap = bitmap;
+          const layer = new Layer(title, path, bitmap);
           this.layers.push(layer);
         });
 
@@ -179,8 +178,6 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
       this.theOneWhoAsksForLayers.unsubscribe();
     }
   }
-
-  oldLayer: any;
 
   chartClicked(evt: Event) {
     if (this.chart) {

@@ -1,30 +1,18 @@
 /// <reference lib="webworker" />
 
-import { Observable, fromEvent, combineLatest } from 'rxjs';
+import { decode, IDecodedPNG } from 'fast-png';
+
+import { fromEvent, combineLatest, forkJoin } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { map, filter, flatMap, shareReplay } from 'rxjs/operators';
-import { rgb2hsv } from './rgb2hsv';
+import { map, filter, flatMap, tap } from 'rxjs/operators';
+import { DataMessage } from './data-message';
 
 const messages$ = fromEvent<MessageEvent>(self, 'message');
 
-const dates$ = messages$.pipe(
+const data$ = messages$.pipe(
   map(({ data }) => data),
-  filter(({ type }) => type === 'dates'),
-  map(({ value }) => value),
-  shareReplay(1)
-);
-
-const limit$ = messages$.pipe(
-  map(({ data }) => data),
-  filter(({ type }) => type === 'limit'),
-  map(({ value }) => value),
-  shareReplay(1)
-);
-
-const name$ = messages$.pipe(
-  map(({ data }) => data),
-  filter(({ type }) => type === 'name'),
-  map(({ value }) => value)
+  filter(({ type }) => type === 'data'),
+  map(({ value }) => value as DataMessage)
 );
 
 const next$ = messages$.pipe(
@@ -33,65 +21,95 @@ const next$ = messages$.pipe(
   map((val, idx) => idx)
 );
 
-const date$ = combineLatest([next$, dates$, limit$]).pipe(
-  map(([next, dates, limit]) => {
-    const step = Math.ceil(dates.length / limit);
+const current$ = combineLatest([next$, data$]).pipe(
+  map(([next, data]) => {
+    const { times, limit } = data;
+    const step = Math.ceil(times.length / limit);
     const idx = next * step;
-    return [dates, idx];
+    return [data, idx] as [DataMessage, number];
   }),
-  filter(([dates, idx]) => idx < dates.length),
-  map(([array, i]) => array[i])
+  filter(([{ times }, idx]) => idx < times.length)
 );
 
-const pictureURL = combineLatest([date$, name$]).pipe(
-  map(([date, name]) => {
+const integerFixedWidth = (int: number, width: number) => {
+  let str = int.toFixed(0);
+  while (str.length < width) {
+    str = '0' + str;
+  }
+  return str;
+};
+
+const timeString = (date: Date) =>
+  integerFixedWidth(date.getUTCFullYear(), 4) + '-' +
+  integerFixedWidth(date.getUTCMonth() + 1, 2) + '-' +
+  integerFixedWidth(date.getUTCDate(), 2);
+
+const pictureURL = current$.pipe(
+  map(([data, idx]) => {
     const url = new URL('https://neo.sci.gsfc.nasa.gov/wms/wms');
-    url.searchParams.set('service', 'WMS');
+    url.searchParams.set('service', data.service);
     url.searchParams.set('request', 'GetMap');
     url.searchParams.set('version', '1.3.0');
-    url.searchParams.set('transparent', 'TRUE');
-    url.searchParams.set('layers', name);
-    url.searchParams.set('styles', '');
+    url.searchParams.set('transparent', 'FALSE');
+    url.searchParams.set('layers', data.name);
+    url.searchParams.set('styles', 'gs');
     url.searchParams.set('format', 'image/png');
-    url.searchParams.set('width', '2560');
-    url.searchParams.set('height', '1280');
-    url.searchParams.set('time', date);
+    url.searchParams.set('width', '3600');
+    url.searchParams.set('height', '1800');
+    url.searchParams.set('time', timeString(data.times[idx]));
     url.searchParams.set('crs', 'CRS:84');
     url.searchParams.set('bbox', '-180,-90,180,90');
-    return [url.toString(), date];
+    return [data, idx, url.toString()] as [DataMessage, number, string];
   })
-) as Observable<[string, string]>;
+);
 
 const bitmap$ = pictureURL.pipe(
-  flatMap(([url, date]) => fromFetch(url).pipe(
-    flatMap(res => res.blob()),
-    flatMap(blob => createImageBitmap(blob)),
-    map(bitmap => [bitmap, date])
-  ))
-) as Observable<[ImageBitmap, string]>;
+  flatMap(([data, idx, bitmapUrl]) =>
+    forkJoin([
+      fromFetch(bitmapUrl),
+      fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '.act.json'),
+      fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '_diddy.xml.json')
+    ]).pipe(
+      flatMap(([bitmapRes, toRGBRes, realRes]) => forkJoin([bitmapRes.arrayBuffer(), toRGBRes.json(), realRes.json()])),
+      map(([pngData, toRGB, toReal]) => [data, idx, decode(pngData), toRGB, toReal] as [DataMessage, number, IDecodedPNG, any, any])
+    )
+  ));
 
 
 bitmap$.pipe(
-  map(([bitmap, date]) => {
-    const cvs = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const twoD = cvs.getContext('2d')! as any;
-    twoD.drawImage(bitmap, 0, 0);
-    const data = twoD.getImageData(0, 0, cvs.width, cvs.height).data;
-    let total = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i + 0];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const a = data[i + 3];
-      const { h, s, v } = rgb2hsv(r, g, b);
-      total += v;
+  flatMap(async ([data, idx, png, toRGB, toReal]) => {
+    const imageData = new ImageData(png.width, png.height);
+    let average = 0;
+    let count = 0;
+    for (let pngIdx = 0; pngIdx < png.data.length; pngIdx++) {
+      const imgIdx = pngIdx * 4;
+      const pngValue = png.data[pngIdx];
+      const [r, g, b] = toRGB[pngValue];
+      const real = toReal.valueMap[pngValue];
+      if (typeof (real) === 'number') {
+        imageData.data[imgIdx + 0] = r;
+        imageData.data[imgIdx + 1] = g;
+        imageData.data[imgIdx + 2] = b;
+        imageData.data[imgIdx + 3] = 255;
+        average += real;
+        count++;
+      } else {
+        imageData.data[imgIdx + 0] = 0;
+        imageData.data[imgIdx + 1] = 0;
+        imageData.data[imgIdx + 2] = 0;
+        imageData.data[imgIdx + 3] = 0;
+      }
     }
-    const average = total * 4 / data.length;
-    return [average, bitmap, date];
+    average /= count;
+    const bitmap = await createImageBitmap(imageData);
+    return { data, idx, average, toRGB, toReal, bitmap };
   })
-).subscribe(([average, bitmap, date]) => {
+).subscribe(({ data, idx, average, toRGB, toReal, bitmap }) => {
+  const title = data.title;
+  const path = data.service + data.name + timeString(data.times[idx]);
+  const time = data.times[idx];
   postMessage({
     type: 'data',
-    value: { average, bitmap, date }
-  });
+    value: { path, title, time, average, toRGB, toReal, bitmap }
+  }, [bitmap]);
 });

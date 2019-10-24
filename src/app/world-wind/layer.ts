@@ -10,6 +10,7 @@ export class Layer extends WorldWind.TiledImageLayer {
   currentTilesInvalid: boolean;
   pickEnabled: boolean;
   displayName: any;
+  opacity = 0;
 
   constructor(title: string, path: string, bitmap: ImageBitmap) {
     super(

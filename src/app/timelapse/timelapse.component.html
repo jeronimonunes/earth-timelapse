@@ -11,7 +11,7 @@
   <canvas id="globe" #globe></canvas>
 </div>
 <div style="display: flex">
-  <mat-slider style="width: 80%; margin: auto" [value]="selectedPoint" [min]="-1" [max]="layers.length - 1" [step]="1" tickInterval="auto" (input)="sliderChange($event)"></mat-slider>
+  <mat-slider style="width: 80%; margin: auto" [value]="selectedLayer" [min]="-1" [max]="layers.length - 1" [step]="1" tickInterval="auto" (input)="sliderChange($event)"></mat-slider>
 </div>
 <div id="graphDiv">
   <canvas #graph (click)="chartClicked($event)"></canvas>

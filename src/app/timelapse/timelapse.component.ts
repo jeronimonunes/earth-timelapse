@@ -1,7 +1,7 @@
-import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy, OnInit } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, take, tap } from 'rxjs/operators';
+import { pluck, map, take } from 'rxjs/operators';
 import { Subscription, combineLatest, fromEvent, interval } from 'rxjs';
 
 import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
@@ -12,23 +12,24 @@ import { blue, red } from './colors';
 import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { DataMessage } from './services/data-message';
 import { MatSliderChange } from '@angular/material/slider';
-import { duration } from './services/util';
+import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
 
 @Component({
   selector: 'app-timelapse',
   templateUrl: './timelapse.component.html',
   styleUrls: ['./timelapse.component.scss']
 })
-export class TimelapseComponent implements AfterViewInit, OnDestroy {
+export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
 
   faEdit = faEdit;
 
   layers: Layer[] = [];
   chart: Chart | null = null;
   theOneThatPlotsTheLayer: Subscription | undefined;
+  animationSubscription!: Subscription;
 
   wwd: any;
-  selectedPoint = -1;
+  selectedLayer = -1;
 
   constructor(
     private route: ActivatedRoute,
@@ -82,6 +83,70 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   layer$ = combineLatest([this.wmsCapabilities$, this.route.params.pipe(pluck('name'))]).pipe(
     map(([wmsCapabilities, name]) => wmsCapabilities.getNamedLayer(name))
   );
+
+  ngOnInit() {
+    // How long to fade out outgoing layer
+    const fadeOutDuration = 500;
+
+    // How long to fade in ingoing layer
+    const fadeInDuration = 300;
+
+    // Our code runs with the animationFrameScheduler
+    const scheduler = animationFrame;
+
+    // Current start time in millisseconds
+    let lastStart = scheduler.now();
+
+    // Observable that emits once every animationFrame ~60fps
+    this.animationSubscription = interval(0, scheduler).subscribe(() => {
+
+      const workStart = scheduler.now();
+      const elapsedMs = workStart - lastStart;
+
+      let changed = false; // Did something change?
+
+      const wwdLayers = this.wwd.layers as Layer[];
+      let currentLayer: Layer | undefined;
+      for (let i = 0; i < this.layers.length; i++) {
+        const layer = this.layers[i];
+        if (i === this.selectedLayer) { // layer to fade in
+          if (layer.opacity < 1) { // if it is not already in
+            layer.opacity += elapsedMs / fadeInDuration; // increment based on elapsed time
+            changed = true;
+            currentLayer = layer;
+          }
+          if (layer.opacity > 0) {
+            if (layer.opacity > 1) {
+              layer.opacity = 1;
+            }
+            const index = wwdLayers.indexOf(layer) as number;
+            if (index < 0) {
+              wwdLayers.push(layer); // the layer needs to be on top
+            }
+          }
+        } else { // layers to fade out
+          if (layer.opacity > 0) { // if it is not already out
+            layer.opacity -= elapsedMs / fadeOutDuration;
+            changed = true;
+          }
+          if (layer.opacity <= 0) {
+            layer.opacity = 0;
+            const index = wwdLayers.indexOf(layer) as number;
+            if (index >= 0) {
+              wwdLayers.splice(index, 1); // we need to remove layers, worldwind breaks with too many
+            }
+          }
+        }
+      }
+      if (changed) {
+        if (currentLayer) {
+          currentLayer.currentTilesInvalid = true;
+        }
+        this.wwd.redraw();
+      }
+      lastStart = workStart;
+    });
+  }
 
   async ngAfterViewInit() {
     const loading = this.matDialog.open(LoadingComponent, { disableClose: true });
@@ -164,68 +229,37 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
     if (this.theOneThatPlotsTheLayer) {
       this.theOneThatPlotsTheLayer.unsubscribe();
     }
+    this.animationSubscription.unsubscribe();
   }
 
-  async fadeOut(layer: Layer) {
-    layer.opacity = 1;
-    await duration(500).pipe(tap(n => {
-      layer.opacity = 1 - n;
-      this.wwd.redraw();
-    })).toPromise();
-    this.wwd.removeLayer(layer);
-  }
-
-  async fadeIn(layer: Layer) {
-    layer.opacity = 0;
-    this.wwd.addLayer(layer);
-    await duration(300).pipe(tap(n => {
-      layer.opacity = n;
-      this.wwd.redraw();
-    })).toPromise();
-  }
-
-  async select(point: number) {
+  select(point: number) {
     if (this.chart) {
       const bg = this.chart.data.datasets![0].backgroundColor as string[];
-      const promises: Promise<void>[] = [];
-      if (this.selectedPoint !== -1) {
-        promises.push(
-          this.fadeOut(this.layers[this.selectedPoint])
-        );
-        bg[this.selectedPoint] = blue.backgroundColor;
+      if (this.selectedLayer !== -1) {
+        bg[this.selectedLayer] = blue.backgroundColor;
       }
-
-      this.selectedPoint = point;
-
-      if (this.selectedPoint !== -1) {
-        bg[this.selectedPoint] = red.backgroundColor;
-        promises.push(
-          this.fadeIn(this.layers[this.selectedPoint])
-        );
+      this.selectedLayer = point;
+      if (this.selectedLayer !== -1) {
+        bg[this.selectedLayer] = red.backgroundColor;
       }
-
-      this.wwd.redraw();
       this.chart.update();
-      await Promise.all(promises);
-      this.wwd.redraw();
     }
   }
 
-  async chartClicked(evt: Event) {
+  chartClicked(evt: Event) {
     if (this.chart) {
       const points: any = this.chart.getElementAtEvent(evt);
       try {
-        await this.select(points[0]._index);
+        this.select(points[0]._index);
       } catch {
-        await this.select(-1);
+        this.select(-1);
       }
     }
   }
 
-  async sliderChange(evt: MatSliderChange) {
+  sliderChange(evt: MatSliderChange) {
     const value = typeof (evt.value) === 'number' ? evt.value : -1;
-    await this.select(value);
-    this.wwd.redraw();
+    this.select(value);
   }
 
 }

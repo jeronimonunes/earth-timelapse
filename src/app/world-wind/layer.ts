@@ -1,4 +1,4 @@
-import '@nasaworldwind/worldwind/build/dist/worldwind.js';
+import '@nasaworldwind/worldwind';
 
 declare const WorldWind: any;
 export const WorldWindExport = WorldWind;

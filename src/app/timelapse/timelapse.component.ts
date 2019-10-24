@@ -63,11 +63,20 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
         scales: {
           xAxes: [{
             type: 'time',
-            distribution: 'linear'
+            distribution: 'linear',
+            ticks: {
+              fontColor: 'white'
+            },
+            gridLines: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            }
           }],
           yAxes: [{
             ticks: {
-              display: true
+              fontColor: 'white'
+            },
+            gridLines: {
+              color: 'rgba(255, 255, 255, 0.1)'
             }
           }]
         }
@@ -155,6 +164,8 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
       this.wwd = new WorldWind.WorldWindow('globe');
       this.wwd.addLayer(new WorldWind.BMNGOneImageLayer());
       this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
+      this.wwd.addLayer(new WorldWind.StarFieldLayer());
+      this.wwd.addLayer(new WorldWind.AtmosphereLayer());
       if (this.cvs.width < 350) {
 
       } else if (this.cvs.width < 700) {

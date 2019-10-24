@@ -59,5 +59,5 @@ export function getColors(count: number): ChartJsColor[] {
   return results;
 }
 
-export const blue = formatColor([5, 10, 30]);
+export const blue = formatColor([74, 111, 163]);
 export const red = formatColor([255, 99, 132]);

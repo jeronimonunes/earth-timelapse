@@ -9,7 +9,7 @@ $custom-typography: mat-typography-config(
 $earth-timelapse-primary: mat-palette($mat-indigo);
 $earth-timelapse-accent: mat-palette($mat-pink, A200, A100, A400);
 $earth-timelapse-warn: mat-palette($mat-red);
-$earth-timelapse-theme: mat-light-theme($earth-timelapse-primary, $earth-timelapse-accent, $earth-timelapse-warn);
+$earth-timelapse-theme: mat-dark-theme($earth-timelapse-primary, $earth-timelapse-accent, $earth-timelapse-warn);
 
 $theme: $earth-timelapse-theme;
 
@@ -29,6 +29,8 @@ body {
   height: 100vh;
   width: 100vw;
   margin: 0;
+  background-color: black;
+  color: white;
 }
 
 @import url('https://fonts.googleapis.com/css?family=Montserrat|Open+Sans&display=swap');

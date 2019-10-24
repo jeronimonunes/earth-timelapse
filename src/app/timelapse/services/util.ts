@@ -30,3 +30,20 @@ export const duration = (ms: number, scheduler = animationFrame) => {
     );
   });
 };
+
+export const makeUrl = (service: string, name: string, time: string) => {
+  const url = new URL('https://neo.sci.gsfc.nasa.gov/wms/wms');
+  url.searchParams.set('service', service);
+  url.searchParams.set('request', 'GetMap');
+  url.searchParams.set('version', '1.3.0');
+  url.searchParams.set('transparent', 'FALSE');
+  url.searchParams.set('layers', name);
+  url.searchParams.set('styles', 'gs');
+  url.searchParams.set('format', 'image/png');
+  url.searchParams.set('width', '3600');
+  url.searchParams.set('height', '1800');
+  url.searchParams.set('time', time);
+  url.searchParams.set('crs', 'CRS:84');
+  url.searchParams.set('bbox', '-180,-90,180,90');
+  return url.toString();
+}

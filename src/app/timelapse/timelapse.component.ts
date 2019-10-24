@@ -26,7 +26,6 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   layers: Layer[] = [];
   chart: Chart | null = null;
   theOneThatPlotsTheLayer: Subscription | undefined;
-  theOneWhoAsksForLayers: Subscription | undefined;
 
   wwd: any;
   selectedPoint = -1;
@@ -128,15 +127,12 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
         }
       }
 
-      const worker = new Worker('./services/image-cache.worker', { type: 'module' });
+      const worker = new Worker('./services/loading.worker', { type: 'module' });
 
-      worker.postMessage({
-        type: 'data',
-        value: { times, limit, name, title, service, legendUrl } as DataMessage
-      });
+      worker.postMessage({ times, limit, name, title, service, legendUrl } as DataMessage);
 
       const workerData$ = fromEvent<MessageEvent>(worker, 'message').pipe(
-        map(({ data }) => data.value as {
+        map(({ data }) => data as {
           path: string, title: string, time: Date,
           average: number, toRGB: any, toReal: any, bitmap: ImageBitmap
         }),
@@ -159,16 +155,6 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
           const layer = new Layer(title, path, bitmap);
           this.layers.push(layer);
         });
-
-      this.theOneWhoAsksForLayers = interval(1000)
-        .pipe(take(20))
-        .subscribe(a => {
-          worker.postMessage({ type: 'next' });
-        });
-
-      worker.postMessage({
-        type: 'next'
-      });
     } finally {
       loading.close();
     }
@@ -177,9 +163,6 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.theOneThatPlotsTheLayer) {
       this.theOneThatPlotsTheLayer.unsubscribe();
-    }
-    if (this.theOneWhoAsksForLayers) {
-      this.theOneWhoAsksForLayers.unsubscribe();
     }
   }
 

@@ -1,31 +1,39 @@
 :host {
-  display: grid;
-  grid-template-rows: 100px 1fr 50px 200px;
-  grid-template-columns: 100vw;
-  place-content: center;
+  position: relative;
   height: 100vh;
   width: 100vw;
 }
 
 h1 {
+  position: absolute;
   text-align: center;
-  place-self: center;
-  margin: 0;
-  padding: 0;
-}
-
-#globeDiv {
-  place-self: center;
-  height: calc(100vh - 100px - 50px - 200px);
+  margin: 12px;
+  width: calc(100vw - 12px);
+  top: 0;
 }
 
 #globe {
-  width: auto;
-  height: 100%;
+  position: absolute;
+}
+
+#sliderDiv {
+  position: absolute;
+  width: calc(100vw - 2em);
+  margin-left: 1em;
+  margin-right: 1em;
+  bottom: 200px;
+}
+
+mat-slider {
+  width: 100%;
 }
 
 #graphDiv {
-  display: grid;
-  place-content: center;
-  margin: 32px;
+  position: absolute;
+  display: flex;
+  margin-left: 1em;
+  margin-right: 1em;
+  bottom: 0;
+  height: 200px;
+  width: calc(100vw - 2em);
 }

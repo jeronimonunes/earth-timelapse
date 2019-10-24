@@ -22,6 +22,7 @@ import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
 export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
 
   faEdit = faEdit;
+  cvs!: HTMLCanvasElement;
 
   layers: Layer[] = [];
   chart: Chart | null = null;
@@ -37,10 +38,9 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
   ) { }
 
   @ViewChild('globe', { static: true }) set globe(globe: ElementRef<HTMLCanvasElement>) {
-    const cvs = globe.nativeElement;
-    const size = 600;
-    cvs.width = size;
-    cvs.height = size;
+    this.cvs = globe.nativeElement;
+    this.cvs.width = window.innerWidth;
+    this.cvs.height = window.innerHeight - 200;
   }
 
   @ViewChild('graph', { static: true }) set graph(graph: ElementRef<HTMLCanvasElement>) {
@@ -155,6 +155,13 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
       this.wwd = new WorldWind.WorldWindow('globe');
       this.wwd.addLayer(new WorldWind.BMNGOneImageLayer());
       this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
+      if (this.cvs.width < 350) {
+
+      } else if (this.cvs.width < 700) {
+        this.wwd.navigator.range *= 2;
+      } else {
+        this.wwd.navigator.range *= 4;
+      }
       this.wwd.redraw();
 
       const layer = await this.layer$.pipe(take(1)).toPromise();

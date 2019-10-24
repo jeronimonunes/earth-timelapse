@@ -1,17 +1,13 @@
-<h1 *ngIf="layer$ | async as layer; else placeholder">
+<canvas id="globe" #globe></canvas>
+<h1 *ngIf="layer$ | async as layer">
   {{layer.title}}
   <a mat-button color="primary" aria-label="Home" routerLink="/">
     <fa-icon [icon]="faEdit"></fa-icon>
   </a>
 </h1>
-<ng-template #placeholder>
-  <div></div>
-</ng-template>
-<div id="globeDiv">
-  <canvas id="globe" #globe></canvas>
-</div>
-<div style="display: flex">
-  <mat-slider style="width: 80%; margin: auto" [value]="selectedLayer" [min]="-1" [max]="layers.length - 1" [step]="1" tickInterval="auto" (input)="sliderChange($event)"></mat-slider>
+<div id="sliderDiv">
+  <mat-slider [value]="selectedLayer" [min]="-1" [max]="layers.length - 1" [step]="1" tickInterval="auto"
+    (input)="sliderChange($event)"></mat-slider>
 </div>
 <div id="graphDiv">
   <canvas #graph (click)="chartClicked($event)"></canvas>

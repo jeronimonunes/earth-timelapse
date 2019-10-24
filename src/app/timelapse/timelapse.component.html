@@ -9,6 +9,10 @@
   <mat-slider [value]="selectedLayer" [min]="-1" [max]="layers.length - 1" [step]="1" tickInterval="auto"
     (input)="sliderChange($event)"></mat-slider>
 </div>
+<div id="palette">
+  <p style="margin-right: 10px; margin-bottom: 5px">{{toReal?.units}}</p>
+  <canvas #palette width="274" height="20"></canvas>
+</div>
 <div id="graphDiv">
   <canvas #graph (click)="chartClicked($event)"></canvas>
 </div>

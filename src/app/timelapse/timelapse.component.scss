@@ -11,7 +11,7 @@ h1 {
   width: calc(100vw - 12px);
   top: 0;
   color: white;
-  background-color: rgba(0,0,0,.5);
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 #globe {
@@ -38,4 +38,14 @@ mat-slider {
   bottom: 0;
   height: 200px;
   width: calc(100vw - 2em);
+}
+
+#palette {
+  position: absolute;
+  right: 1em;
+  bottom: 248px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: right;
 }

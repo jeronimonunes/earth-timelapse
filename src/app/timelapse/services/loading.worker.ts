@@ -13,6 +13,10 @@ addEventListener('message', async ({ data }) => {
     toRGBres.json(),
     toRealRes.json()
   ]);
+  postMessage({
+    type: 'init',
+    value: { toRGB, toReal }
+  });
   const step = Math.ceil(times.length / limit);
   for (let i = 0; i < times.length; i += step) {
     try {
@@ -44,7 +48,10 @@ addEventListener('message', async ({ data }) => {
       average /= count;
       const bitmap = await createImageBitmap(imageData);
       const path = service + name + timeString(times[i]);
-      postMessage({ path, title, time: times[i], average, toRGB, toReal, bitmap }, [bitmap]);
+      postMessage({
+        type: 'data',
+        value: { path, time: times[i], average, bitmap }
+      }, [bitmap]);
     } catch (e) {
       console.error(e);
     }

@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy, OnInit } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, take } from 'rxjs/operators';
+import { pluck, map, take, filter } from 'rxjs/operators';
 import { Subscription, combineLatest, fromEvent, interval } from 'rxjs';
 
 import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
@@ -22,25 +22,33 @@ import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
 export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
 
   faEdit = faEdit;
-  cvs!: HTMLCanvasElement;
+  globeCanvas!: HTMLCanvasElement;
+  paletteCanvas!: HTMLCanvasElement;
 
   layers: Layer[] = [];
   chart: Chart | null = null;
-  theOneThatPlotsTheLayer: Subscription | undefined;
+
+  incomingDataSubscription: Subscription | undefined;
   animationSubscription!: Subscription;
 
   wwd: any;
   selectedLayer = -1;
+
+  toReal: any;
 
   constructor(
     private route: ActivatedRoute,
     private matDialog: MatDialog
   ) { }
 
+  @ViewChild('palette', { static: true }) set palette(palette: ElementRef<HTMLCanvasElement>) {
+    this.paletteCanvas = palette.nativeElement;
+  }
+
   @ViewChild('globe', { static: true }) set globe(globe: ElementRef<HTMLCanvasElement>) {
-    this.cvs = globe.nativeElement;
-    this.cvs.width = window.innerWidth;
-    this.cvs.height = window.innerHeight - 200;
+    this.globeCanvas = globe.nativeElement;
+    this.globeCanvas.width = window.innerWidth;
+    this.globeCanvas.height = window.innerHeight - 200;
   }
 
   @ViewChild('graph', { static: true }) set graph(graph: ElementRef<HTMLCanvasElement>) {
@@ -166,9 +174,9 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
       this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
       this.wwd.addLayer(new WorldWind.StarFieldLayer());
       this.wwd.addLayer(new WorldWind.AtmosphereLayer());
-      if (this.cvs.width < 350) {
+      if (this.globeCanvas.width < 350) {
 
-      } else if (this.cvs.width < 700) {
+      } else if (this.globeCanvas.width < 700) {
         this.wwd.navigator.range *= 2;
       } else {
         this.wwd.navigator.range *= 4;
@@ -196,7 +204,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
       if (!rgb || !gs) {
         // should error
       } else {
-        for (const legend of rgb.legendUrls) { // why string?
+        for (const legend of rgb.legendUrls) { // why array?
           legendUrl = legend.url;
         }
       }
@@ -214,38 +222,77 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
 
       worker.postMessage({ times, limit, name, title, service, legendUrl } as DataMessage);
 
-      const workerData$ = fromEvent<MessageEvent>(worker, 'message').pipe(
-        map(({ data }) => data as {
-          path: string, title: string, time: Date,
-          average: number, toRGB: any, toReal: any, bitmap: ImageBitmap
-        }),
-      );
+      const workerMessages$ = fromEvent<MessageEvent>(worker, 'message');
 
-      this.theOneThatPlotsTheLayer = workerData$
-        .subscribe(async ({ path, title, time, average, toRGB, toReal, bitmap }) => {
-          if (this.chart) {
-            const dataset = this.chart.data.datasets![0]!;
-            const data = dataset.data! as Chart.ChartPoint[];
-            const bg = dataset.backgroundColor as string[];
-            data.push({
-              t: time,
-              y: average
-            });
-            data.sort((a: any, b: any) => a.t - b.t);
-            bg.push(blue.backgroundColor);
-            this.chart.update();
-          }
-          const layer = new Layer(title, path, bitmap);
-          this.layers.push(layer);
-        });
+      this.incomingDataSubscription = workerMessages$.pipe(
+        map(({ data }) => data),
+        filter(({ type }) => type === 'data'),
+        map(({ value }) => value as {
+          path: string, time: Date,
+          average: number, bitmap: ImageBitmap
+        })
+      ).subscribe(async ({ path, time, average, bitmap }) => {
+        if (this.chart) {
+          const dataset = this.chart.data.datasets![0]!;
+          const data = dataset.data! as Chart.ChartPoint[];
+          const bg = dataset.backgroundColor as string[];
+          data.push({
+            t: time,
+            y: average
+          });
+          data.sort((a: any, b: any) => a.t - b.t);
+          bg.push(blue.backgroundColor);
+          this.chart.update();
+        }
+        const layer = new Layer(title, path, bitmap);
+        this.layers.push(layer);
+      });
+
+      const { toRGB, toReal } = await workerMessages$.pipe(
+        map(({ data }) => data),
+        filter(({ type }) => type === 'init'),
+        map(({ value }) => value as { toRGB: any, toReal: any }),
+        take(1)
+      ).toPromise();
+      this.toReal = toReal;
+      console.log(toReal);
+      const ctx = this.paletteCanvas.getContext('2d')!;
+      for (let i = 0; i < 254; i++) {
+        const [r, g, b] = toRGB[i];
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(i + 10, 0, 1, 10);
+      }
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+
+      ctx.fillStyle = 'white';
+      ctx.fillText(toReal.valueMap[0], 10, 12);
+
+      ctx.fillStyle = 'black';
+      ctx.fillRect(73, 5, 1, 5);
+      ctx.fillStyle = 'white';
+      ctx.fillText(toReal.valueMap[63], 73, 12);
+
+      ctx.fillStyle = 'black';
+      ctx.fillRect(137, 5, 1, 5);
+      ctx.fillStyle = 'white';
+      ctx.fillText(toReal.valueMap[127], 137, 12);
+
+      ctx.fillStyle = 'black';
+      ctx.fillRect(200, 5, 1, 5);
+      ctx.fillStyle = 'white';
+      ctx.fillText(toReal.valueMap[190], 200, 12);
+
+      ctx.fillStyle = 'white';
+      ctx.fillText(toReal.valueMap[254], 264, 12);
     } finally {
       loading.close();
     }
   }
 
   ngOnDestroy() {
-    if (this.theOneThatPlotsTheLayer) {
-      this.theOneThatPlotsTheLayer.unsubscribe();
+    if (this.incomingDataSubscription) {
+      this.incomingDataSubscription.unsubscribe();
     }
     this.animationSubscription.unsubscribe();
   }

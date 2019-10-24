@@ -1,6 +1,6 @@
 :host {
   display: grid;
-  grid-template-rows: 100px 1fr 200px;
+  grid-template-rows: 100px 1fr 50px 200px;
   grid-template-columns: 100vw;
   place-content: center;
   height: 100vh;
@@ -16,7 +16,7 @@ h1 {
 
 #globeDiv {
   place-self: center;
-  height: calc(100vh - 100px - 200px);
+  height: calc(100vh - 100px - 50px - 200px);
 }
 
 #globe {

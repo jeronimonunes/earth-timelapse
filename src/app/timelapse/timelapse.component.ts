@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
-import { pluck, map, take } from 'rxjs/operators';
+import { pluck, map, take, tap } from 'rxjs/operators';
 import { Subscription, combineLatest, fromEvent, interval } from 'rxjs';
 
 import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
@@ -11,6 +11,8 @@ import { Chart } from 'chart.js';
 import { blue, red } from './colors';
 import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { DataMessage } from './services/data-message';
+import { MatSliderChange } from '@angular/material/slider';
+import { duration } from './services/util';
 
 @Component({
   selector: 'app-timelapse',
@@ -27,7 +29,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   theOneWhoAsksForLayers: Subscription | undefined;
 
   wwd: any;
-  selectedPoint: number | undefined;
+  selectedPoint = -1;
 
   constructor(
     private route: ActivatedRoute,
@@ -61,7 +63,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
         scales: {
           xAxes: [{
             type: 'time',
-            distribution: 'series'
+            distribution: 'linear'
           }],
           yAxes: [{
             ticks: {
@@ -181,30 +183,66 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  chartClicked(evt: Event) {
+  async fadeOut(layer: Layer) {
+    layer.opacity = 1;
+    await duration(500).pipe(tap(n => {
+      layer.opacity = 1 - n;
+      this.wwd.redraw();
+    })).toPromise();
+    this.wwd.removeLayer(layer);
+  }
+
+  async fadeIn(layer: Layer) {
+    layer.opacity = 0;
+    this.wwd.addLayer(layer);
+    await duration(300).pipe(tap(n => {
+      layer.opacity = n;
+      this.wwd.redraw();
+    })).toPromise();
+  }
+
+  async select(point: number) {
     if (this.chart) {
       const bg = this.chart.data.datasets![0].backgroundColor as string[];
-
-      if (this.selectedPoint !== undefined) {
-        this.wwd.removeLayer(this.layers[this.selectedPoint]);
+      const promises: Promise<void>[] = [];
+      if (this.selectedPoint !== -1) {
+        promises.push(
+          this.fadeOut(this.layers[this.selectedPoint])
+        );
         bg[this.selectedPoint] = blue.backgroundColor;
       }
 
-      const points: any = this.chart.getElementAtEvent(evt);
-      try {
-        this.selectedPoint = points[0]._index;
-      } catch {
-        this.selectedPoint = undefined;
-      }
+      this.selectedPoint = point;
 
-      if (this.selectedPoint !== undefined) {
+      if (this.selectedPoint !== -1) {
         bg[this.selectedPoint] = red.backgroundColor;
-        this.wwd.addLayer(this.layers[this.selectedPoint]);
+        promises.push(
+          this.fadeIn(this.layers[this.selectedPoint])
+        );
       }
 
       this.wwd.redraw();
       this.chart.update();
+      await Promise.all(promises);
+      this.wwd.redraw();
     }
+  }
+
+  async chartClicked(evt: Event) {
+    if (this.chart) {
+      const points: any = this.chart.getElementAtEvent(evt);
+      try {
+        await this.select(points[0]._index);
+      } catch {
+        await this.select(-1);
+      }
+    }
+  }
+
+  async sliderChange(evt: MatSliderChange) {
+    const value = typeof (evt.value) === 'number' ? evt.value : -1;
+    await this.select(value);
+    this.wwd.redraw();
   }
 
 }

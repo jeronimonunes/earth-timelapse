@@ -6,6 +6,7 @@ import { TimelapseComponent } from './timelapse.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { LoadingModule } from '../loading/loading.module';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSliderModule } from '@angular/material/slider';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
 
@@ -16,6 +17,7 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
     ReactiveFormsModule,
     TimelapseRoutingModule,
     MatButtonModule,
+    MatSliderModule,
     FontAwesomeModule,
     LoadingModule
   ]

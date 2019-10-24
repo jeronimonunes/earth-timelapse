@@ -6,6 +6,7 @@ import { fromEvent, combineLatest, forkJoin } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import { map, filter, flatMap, tap } from 'rxjs/operators';
 import { DataMessage } from './data-message';
+import { timeString } from './util';
 
 const messages$ = fromEvent<MessageEvent>(self, 'message');
 
@@ -31,19 +32,6 @@ const current$ = combineLatest([next$, data$]).pipe(
   filter(([{ times }, idx]) => idx < times.length)
 );
 
-const integerFixedWidth = (int: number, width: number) => {
-  let str = int.toFixed(0);
-  while (str.length < width) {
-    str = '0' + str;
-  }
-  return str;
-};
-
-const timeString = (date: Date) =>
-  integerFixedWidth(date.getUTCFullYear(), 4) + '-' +
-  integerFixedWidth(date.getUTCMonth() + 1, 2) + '-' +
-  integerFixedWidth(date.getUTCDate(), 2);
-
 const pictureURL = current$.pipe(
   map(([data, idx]) => {
     const url = new URL('https://neo.sci.gsfc.nasa.gov/wms/wms');
@@ -63,21 +51,23 @@ const pictureURL = current$.pipe(
   })
 );
 
-const bitmap$ = pictureURL.pipe(
-  flatMap(([data, idx, bitmapUrl]) =>
-    forkJoin([
-      fromFetch(bitmapUrl),
-      fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '.act.json'),
-      fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '_diddy.xml.json')
-    ]).pipe(
-      flatMap(([bitmapRes, toRGBRes, realRes]) => forkJoin([bitmapRes.arrayBuffer(), toRGBRes.json(), realRes.json()])),
-      map(([pngData, toRGB, toReal]) => [data, idx, decode(pngData), toRGB, toReal] as [DataMessage, number, IDecodedPNG, any, any])
-    )
-  ));
+const palettes$ = data$.pipe(
+  flatMap(data => forkJoin([
+    fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '.act.json')
+      .pipe(flatMap(res => res.json())),
+    fromFetch(data.legendUrl.substr(0, data.legendUrl.length - 4) + '_diddy.xml.json')
+      .pipe(flatMap(res => res.json()))
+  ]))
+);
 
+const bitmap$ = pictureURL.pipe(flatMap(([data, idx, bitmapUrl]) => fromFetch(bitmapUrl).pipe(
+  flatMap(res => res.arrayBuffer()),
+  map(buf => decode(buf)),
+  map(png => [data, idx, png] as [DataMessage, number, IDecodedPNG])
+)));
 
-bitmap$.pipe(
-  flatMap(async ([data, idx, png, toRGB, toReal]) => {
+combineLatest([palettes$, bitmap$]).pipe(
+  flatMap(async ([[toRGB, toReal], [data, idx, png]]) => {
     const imageData = new ImageData(png.width, png.height);
     let average = 0;
     let count = 0;

@@ -8,7 +8,7 @@ import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
 import { MatDialog } from '@angular/material/dialog';
 import { LoadingComponent } from '../loading/loading.component';
 import { Chart } from 'chart.js';
-import { blue } from './colors';
+import { blue, red } from './colors';
 import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { DataMessage } from './services/data-message';
 
@@ -27,7 +27,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
   theOneWhoAsksForLayers: Subscription | undefined;
 
   wwd: any;
-  oldLayer: any;
+  selectedPoint: number | undefined;
 
   constructor(
     private route: ActivatedRoute,
@@ -50,8 +50,8 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
       data: {
         datasets: [{
           data: [],
-          fill: false,
-          ...blue
+          ...blue,
+          backgroundColor: []
         }]
       },
       options: {
@@ -143,13 +143,15 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
       this.theOneThatPlotsTheLayer = workerData$
         .subscribe(async ({ path, title, time, average, toRGB, toReal, bitmap }) => {
           if (this.chart) {
-            const datasets = this.chart.data.datasets![0]!;
-            const data = datasets.data! as Chart.ChartPoint[];
+            const dataset = this.chart.data.datasets![0]!;
+            const data = dataset.data! as Chart.ChartPoint[];
+            const bg = dataset.backgroundColor as string[];
             data.push({
               t: time,
               y: average
             });
-            data.sort((a: any, b: any) => a.t - b.t)
+            data.sort((a: any, b: any) => a.t - b.t);
+            bg.push(blue.backgroundColor);
             this.chart.update();
           }
           const layer = new Layer(title, path, bitmap);
@@ -181,17 +183,27 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy {
 
   chartClicked(evt: Event) {
     if (this.chart) {
-      const points: any = this.chart.getElementAtEvent(evt);
-      if (points.length) {
-        const point = points[0]._index;
-        if (this.oldLayer) {
-          this.wwd.removeLayer(this.oldLayer);
-        }
-        // old layer
-        this.oldLayer = this.layers[point];
-        this.wwd.addLayer(this.oldLayer);
-        this.wwd.redraw();
+      const bg = this.chart.data.datasets![0].backgroundColor as string[];
+
+      if (this.selectedPoint !== undefined) {
+        this.wwd.removeLayer(this.layers[this.selectedPoint]);
+        bg[this.selectedPoint] = blue.backgroundColor;
       }
+
+      const points: any = this.chart.getElementAtEvent(evt);
+      try {
+        this.selectedPoint = points[0]._index;
+      } catch {
+        this.selectedPoint = undefined;
+      }
+
+      if (this.selectedPoint !== undefined) {
+        bg[this.selectedPoint] = red.backgroundColor;
+        this.wwd.addLayer(this.layers[this.selectedPoint]);
+      }
+
+      this.wwd.redraw();
+      this.chart.update();
     }
   }
 

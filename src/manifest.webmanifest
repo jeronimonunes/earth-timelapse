@@ -4,8 +4,8 @@
   "theme_color": "black",
   "background_color": "black",
   "display": "standalone",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "/earth-timelapse/",
+  "start_url": "/earth-timelapse/",
   "icons": [
     {
       "src": "assets/icons/icon-72x72.png",

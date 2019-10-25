@@ -13,6 +13,7 @@ import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { DataMessage } from './services/data-message';
 import { MatSliderChange } from '@angular/material/slider';
 import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
+import { FormGroup, FormControl } from '@angular/forms';
 
 declare const WorldWind: any;
 
@@ -24,8 +25,15 @@ declare const WorldWind: any;
 export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
 
   faEdit = faEdit;
+
+  worker: Worker | undefined;
+
   globeCanvas!: HTMLCanvasElement;
   paletteCanvas!: HTMLCanvasElement;
+
+  searchForm = new FormGroup({
+    text: new FormControl('')
+  });
 
   layers: Layer[] = [];
   chart: Chart | null = null;
@@ -37,6 +45,8 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
   selectedLayer = -1;
 
   toReal: any;
+
+  geocoder: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -172,6 +182,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
     try {
       /** Base globe */
       this.wwd = new WorldWind.WorldWindow('globe');
+      this.geocoder = new WorldWind.NominatimGeocoder();
       this.wwd.addLayer(new WorldWind.BMNGOneImageLayer());
       this.wwd.addLayer(new WorldWind.BMNGLandsatLayer());
       this.wwd.addLayer(new WorldWind.StarFieldLayer());
@@ -183,6 +194,8 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
       } else {
         this.wwd.navigator.range *= 4;
       }
+      this.wwd.navigator.lookAtLocation.latitude = -10.3333333;
+      this.wwd.navigator.lookAtLocation.longitude = -53.2;
       this.wwd.redraw();
 
       const layer = await this.layer$.pipe(take(1)).toPromise();
@@ -220,11 +233,11 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
         }
       }
 
-      const worker = new Worker('./services/loading.worker', { type: 'module' });
+      this.worker = new Worker('./services/loading.worker', { type: 'module' });
 
-      worker.postMessage({ times, limit, name, title, service, legendUrl } as DataMessage);
+      this.worker.postMessage({ times, limit, name, title, service, legendUrl } as DataMessage);
 
-      const workerMessages$ = fromEvent<MessageEvent>(worker, 'message');
+      const workerMessages$ = fromEvent<MessageEvent>(this.worker, 'message');
 
       this.incomingDataSubscription = workerMessages$.pipe(
         map(({ data }) => data),
@@ -246,8 +259,7 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
           bg.push(blue.backgroundColor);
           this.chart.update();
         }
-        const layer = new Layer(title, path, bitmap);
-        this.layers.push(layer);
+        this.layers.push(new Layer(title, path, bitmap));
       });
 
       const { toRGB, toReal } = await workerMessages$.pipe(
@@ -295,6 +307,9 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
     if (this.incomingDataSubscription) {
       this.incomingDataSubscription.unsubscribe();
     }
+    if (this.worker) {
+      this.worker.terminate();
+    }
     this.animationSubscription.unsubscribe();
   }
 
@@ -326,6 +341,27 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
   sliderChange(evt: MatSliderChange) {
     const value = typeof (evt.value) === 'number' ? evt.value : -1;
     this.select(value);
+  }
+
+  search() {
+    const queryString = this.searchForm.value.text;
+    if (queryString) {
+      if (queryString.match(WorldWind.WWUtil.latLonRegex)) {
+        const tokens = queryString.split(',');
+        const latitude = parseFloat(tokens[0]);
+        const longitude = parseFloat(tokens[1]);
+        this.wwd.goTo(new WorldWind.Location(latitude, longitude));
+      } else {
+        this.geocoder.lookup(queryString, (geocoder: any, result: any) => {
+          if (result.length > 0) {
+            const latitude = parseFloat(result[0].lat);
+            const longitude = parseFloat(result[0].lon);
+
+            this.wwd.goTo(new WorldWind.Location(latitude, longitude));
+          }
+        });
+      }
+    }
   }
 
 }

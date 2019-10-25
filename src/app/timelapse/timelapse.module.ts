@@ -8,6 +8,8 @@ import { LoadingModule } from '../loading/loading.module';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSliderModule } from '@angular/material/slider';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 
 @NgModule({
@@ -18,6 +20,8 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
     TimelapseRoutingModule,
     MatButtonModule,
     MatSliderModule,
+    MatFormFieldModule,
+    MatInputModule,
     FontAwesomeModule,
     LoadingModule
   ]

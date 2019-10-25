@@ -16,3 +16,9 @@
 <div id="graphDiv">
   <canvas #graph (click)="chartClicked($event)"></canvas>
 </div>
+<form [formGroup]="searchForm" (ngSubmit)="search()">
+  <mat-form-field>
+    <input matInput placeholder="GoTo" formControlName="text">
+    <button matSuffix mat-button>Ok</button>
+  </mat-form-field>
+</form>

@@ -49,3 +49,17 @@ mat-slider {
   justify-content: flex-end;
   text-align: right;
 }
+
+form {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  bottom: calc(200px + 48px + 20px + 1em);
+  left: 0;
+  right: 0;
+}
+
+mat-form-field {
+  max-width: 80vw;
+  width: 500px;
+}

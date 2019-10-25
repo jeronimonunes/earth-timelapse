@@ -1,7 +1,7 @@
 <canvas id="globe" #globe></canvas>
 <h1 *ngIf="layer$ | async as layer">
   {{layer.title}}
-  <a mat-button color="primary" aria-label="Home" routerLink="/">
+  <a mat-button color="primary" style="color: white" aria-label="Home" routerLink="/">
     <fa-icon [icon]="faEdit"></fa-icon>
   </a>
 </h1>

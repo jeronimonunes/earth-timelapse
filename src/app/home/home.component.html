@@ -1,15 +1,19 @@
-<h1>How did it change?</h1>
-<mat-form-field>
-  <input type="text" matInput placeholder="What" [formControl]="what" [matAutocomplete]="auto">
+<canvas id='stars' #stars></canvas>
+<div>
+  <h1>Earth: How did it change?</h1>
+  <mat-form-field>
+    <input type="text" matInput placeholder="What" [formControl]="what" [matAutocomplete]="auto">
 
-  <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" [autoActiveFirstOption]="true">
-    <mat-optgroup *ngFor="let group of options$ | async" [label]="group.title">
-      <mat-option *ngFor="let layer of group.items" [value]="layer">
-        {{layer.title}}
-      </mat-option>
-    </mat-optgroup>
-  </mat-autocomplete>
-</mat-form-field>
+    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" [autoActiveFirstOption]="true">
+      <mat-optgroup *ngFor="let group of options$ | async" [label]="group.title">
+        <mat-option *ngFor="let layer of group.items" [value]="layer">
+          {{layer.title}}
+        </mat-option>
+      </mat-optgroup>
+    </mat-autocomplete>
+  </mat-form-field>
 
-<button mat-button mat-raised-button color="primary" [disabled]="!what.valid" (click)="go(what.value)">Show me what you
-  got!</button>
+  <button mat-button mat-raised-button color="primary" [disabled]="!what.valid" (click)="go(what.value)">
+    Show me what you got!
+  </button>
+</div>

@@ -1,8 +1,4 @@
-import '@nasaworldwind/worldwind';
-
 declare const WorldWind: any;
-export const WorldWindExport = WorldWind;
-
 
 export class Layer extends WorldWind.TiledImageLayer {
 

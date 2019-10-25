@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { map, shareReplay, startWith, pluck, filter } from 'rxjs/operators';
 import { combineLatest } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
+
+declare const WorldWind: any;
 
 interface Layer {
   title: string;
@@ -19,7 +21,7 @@ interface Group {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent {
+export class HomeComponent implements AfterViewInit {
 
   what = new FormControl('', Validators.compose([
     Validators.required,
@@ -60,6 +62,17 @@ export class HomeComponent {
     private router: Router,
     private route: ActivatedRoute
   ) {
+  }
+
+  @ViewChild('stars', { static: true }) set stars(stars: ElementRef<HTMLCanvasElement>) {
+    const cvs = stars.nativeElement;
+    cvs.width = window.innerWidth;
+    cvs.height = window.innerHeight;
+  }
+
+  ngAfterViewInit() {
+    const wwd = new WorldWind.WorldWindow('stars');
+    wwd.addLayer(new WorldWind.StarFieldLayer());
   }
 
   workLayers(xml: Document): Group[] {

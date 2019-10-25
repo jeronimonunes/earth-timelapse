@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { pluck, map, take, filter } from 'rxjs/operators';
 import { Subscription, combineLatest, fromEvent, interval } from 'rxjs';
 
-import { WorldWindExport as WorldWind, Layer } from '../world-wind/layer';
+import { Layer } from '../world-wind/layer';
 import { MatDialog } from '@angular/material/dialog';
 import { LoadingComponent } from '../loading/loading.component';
 import { Chart } from 'chart.js';
@@ -13,6 +13,8 @@ import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { DataMessage } from './services/data-message';
 import { MatSliderChange } from '@angular/material/slider';
 import { animationFrame } from 'rxjs/internal/scheduler/animationFrame';
+
+declare const WorldWind: any;
 
 @Component({
   selector: 'app-timelapse',
@@ -255,7 +257,6 @@ export class TimelapseComponent implements AfterViewInit, OnDestroy, OnInit {
         take(1)
       ).toPromise();
       this.toReal = toReal;
-      console.log(toReal);
       const ctx = this.paletteCanvas.getContext('2d')!;
       for (let i = 0; i < 254; i++) {
         const [r, g, b] = toRGB[i];

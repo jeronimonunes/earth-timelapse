@@ -7,6 +7,10 @@ import { environment } from './environments/environment';
 import 'hammerjs';
 import '@nasaworldwind/worldwind';
 
+declare const WorldWind: any;
+
+WorldWind.configuration.baseUrl = document.baseURI;
+
 if (environment.production) {
   enableProdMode();
 }

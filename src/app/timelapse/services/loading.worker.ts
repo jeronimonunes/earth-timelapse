@@ -4,7 +4,7 @@ import { decode } from 'fast-png';
 import { timeString, makeUrl } from './util';
 
 addEventListener('message', async ({ data }) => {
-  const { service, name, times, limit, legendUrl, title } = data;
+  const { service, name, times, limit, legendUrl } = data;
   const [toRGBres, toRealRes] = await Promise.all([
     fetch(legendUrl.substr(0, legendUrl.length - 4) + '.act.json'),
     fetch(legendUrl.substr(0, legendUrl.length - 4) + '_diddy.xml.json')
@@ -46,12 +46,21 @@ addEventListener('message', async ({ data }) => {
         }
       }
       average /= count;
-      const bitmap = await createImageBitmap(imageData);
       const path = service + name + timeString(times[i]);
-      postMessage({
-        type: 'data',
-        value: { path, time: times[i], average, bitmap }
-      }, [bitmap]);
+
+      // Microsoft Edge and Safari don't implement this feature
+      if (typeof (createImageBitmap) === 'function') {
+        const bitmap = await createImageBitmap(imageData);
+        postMessage({
+          type: 'data',
+          value: { path, time: times[i], average, bitmap }
+        }, [bitmap]);
+      } else {
+        postMessage({
+          type: 'data',
+          value: { path, time: times[i], average, bitmap: imageData }
+        });
+      }
     } catch (e) {
       console.error(e);
     }

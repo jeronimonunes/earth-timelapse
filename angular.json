@@ -147,7 +147,9 @@
         },
         "deploy": {
           "builder": "angular-cli-ghpages:deploy",
-          "options": {}
+          "options": {
+            "baseHref": "https://jeronimonunes.github.io/earth-timelapse/"
+          }
         }
       }
     }

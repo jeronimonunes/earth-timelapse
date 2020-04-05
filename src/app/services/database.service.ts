@@ -1,38 +1,42 @@
 import { Injectable } from '@angular/core';
-import { openDB } from 'idb';
-import { from } from 'rxjs';
-import { shareReplay, map, switchMap } from 'rxjs/operators';
+import { DBSchema, openDB } from 'idb';
+
+interface CacheItem {
+  date: Date;
+  content: any;
+}
+
+interface Store extends DBSchema {
+  caches: {
+    value: CacheItem;
+    key: string;
+  };
+}
 
 @Injectable()
 export class DatabaseService {
 
-  idb = openDB(
+  idb = openDB<Store>(
     'earth-timelapse', // name
-    1, // version
+    2, // version
     {
       upgrade: (db, oldVersion, newVersion, transaction) => {
+        if (oldVersion === 1) {
+          db.deleteObjectStore('caches');
+        }
         db.createObjectStore('caches');
       }
     }
   );
 
-  constructor() {
-
-  }
-
-  async transaction(stores: string[], mode: IDBTransactionMode) {
-    const db = await this.idb;
-    return db.transaction(stores, mode);
-  }
-
   async getFromCaches(key: string) {
-    const tx = await this.transaction(['caches'], 'readonly');
-    return tx.objectStore('caches').get(key);
+    const idb = await this.idb;
+    return idb.get('caches', key);
   }
 
-  async saveOnCaches(key: string, data: any) {
-    const tx = await this.transaction(['caches'], 'readwrite');
-    return tx.objectStore('caches').put(data, key);
+  async saveOnCaches(key: string, content: any) {
+    const idb = await this.idb;
+    return idb.put('caches', { date: new Date(), content }, key);
   }
 
 }

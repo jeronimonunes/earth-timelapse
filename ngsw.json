@@ -1,31 +1,34 @@
 {
   "configVersion": 1,
-  "timestamp": 1586131521637,
+  "timestamp": 1595184277233,
   "index": "https://jeronimonunes.github.io/earth-timelapse/index.html",
   "assetGroups": [
     {
       "name": "app",
       "installMode": "prefetch",
       "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
       "urls": [
-        "https://jeronimonunes.github.io/earth-timelapse/0-es2015.69753d420be6d96c1272.worker.js",
-        "https://jeronimonunes.github.io/earth-timelapse/0-es5.69753d420be6d96c1272.worker.js",
-        "https://jeronimonunes.github.io/earth-timelapse/1-es2015.edae82f3536e498d88e7.js",
-        "https://jeronimonunes.github.io/earth-timelapse/1-es5.edae82f3536e498d88e7.js",
-        "https://jeronimonunes.github.io/earth-timelapse/6-es2015.6217f25a68bd64c4a4a6.js",
-        "https://jeronimonunes.github.io/earth-timelapse/6-es5.6217f25a68bd64c4a4a6.js",
-        "https://jeronimonunes.github.io/earth-timelapse/7-es2015.08e2936f444fef0c6590.js",
-        "https://jeronimonunes.github.io/earth-timelapse/7-es5.08e2936f444fef0c6590.js",
+        "https://jeronimonunes.github.io/earth-timelapse/0-es2015.5fdf1197bdff81705de8.worker.js",
+        "https://jeronimonunes.github.io/earth-timelapse/0-es5.5fdf1197bdff81705de8.worker.js",
+        "https://jeronimonunes.github.io/earth-timelapse/1-es2015.c88e527c0d22bf23d084.js",
+        "https://jeronimonunes.github.io/earth-timelapse/1-es5.c88e527c0d22bf23d084.js",
+        "https://jeronimonunes.github.io/earth-timelapse/6-es2015.67c7b90284267ad456f6.js",
+        "https://jeronimonunes.github.io/earth-timelapse/6-es5.67c7b90284267ad456f6.js",
+        "https://jeronimonunes.github.io/earth-timelapse/7-es2015.4142bb2a4a35306faa91.js",
+        "https://jeronimonunes.github.io/earth-timelapse/7-es5.4142bb2a4a35306faa91.js",
         "https://jeronimonunes.github.io/earth-timelapse/favicon.ico",
         "https://jeronimonunes.github.io/earth-timelapse/index.html",
-        "https://jeronimonunes.github.io/earth-timelapse/main-es2015.2701f0e32c1b11cc4382.js",
-        "https://jeronimonunes.github.io/earth-timelapse/main-es5.2701f0e32c1b11cc4382.js",
+        "https://jeronimonunes.github.io/earth-timelapse/main-es2015.42a990806ea5fd466f59.js",
+        "https://jeronimonunes.github.io/earth-timelapse/main-es5.42a990806ea5fd466f59.js",
         "https://jeronimonunes.github.io/earth-timelapse/manifest.webmanifest",
-        "https://jeronimonunes.github.io/earth-timelapse/polyfills-es2015.e69008912ea6bfd9172b.js",
-        "https://jeronimonunes.github.io/earth-timelapse/polyfills-es5.a6c9ab753e2e07364a83.js",
-        "https://jeronimonunes.github.io/earth-timelapse/runtime-es2015.1a440f29b748be16d2c9.js",
-        "https://jeronimonunes.github.io/earth-timelapse/runtime-es5.1a440f29b748be16d2c9.js",
-        "https://jeronimonunes.github.io/earth-timelapse/styles.d435cd9b4ca25df5da9f.css"
+        "https://jeronimonunes.github.io/earth-timelapse/polyfills-es2015.578ae4c771d50a6ed3ee.js",
+        "https://jeronimonunes.github.io/earth-timelapse/polyfills-es5.41a50de0451a8d01b801.js",
+        "https://jeronimonunes.github.io/earth-timelapse/runtime-es2015.8801579aa675722bc023.js",
+        "https://jeronimonunes.github.io/earth-timelapse/runtime-es5.8801579aa675722bc023.js",
+        "https://jeronimonunes.github.io/earth-timelapse/styles.01706e2186db738d35b5.css"
       ],
       "patterns": []
     },
@@ -33,6 +36,9 @@
       "name": "assets",
       "installMode": "lazy",
       "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
       "urls": [
         "https://jeronimonunes.github.io/earth-timelapse/assets/icons/android-chrome-192x192.png",
         "https://jeronimonunes.github.io/earth-timelapse/assets/icons/android-chrome-512x512.png",
@@ -100,14 +106,14 @@
   ],
   "dataGroups": [],
   "hashTable": {
-    "https://jeronimonunes.github.io/earth-timelapse/0-es2015.69753d420be6d96c1272.worker.js": "7e5ca690ea191c5b0c131cbcecdba0c4d366ed14",
-    "https://jeronimonunes.github.io/earth-timelapse/0-es5.69753d420be6d96c1272.worker.js": "f2b53a0cab06048fc10ba36d70094a29572fd387",
-    "https://jeronimonunes.github.io/earth-timelapse/1-es2015.edae82f3536e498d88e7.js": "454a06857b71d886d1b666e3f7525fdbc48f142e",
-    "https://jeronimonunes.github.io/earth-timelapse/1-es5.edae82f3536e498d88e7.js": "370e4f4e13a3f3e6c0cb97d0ae05e9bdd5dfce1d",
-    "https://jeronimonunes.github.io/earth-timelapse/6-es2015.6217f25a68bd64c4a4a6.js": "5686b3e092d1878af06f7a1239f2820a7628cc0e",
-    "https://jeronimonunes.github.io/earth-timelapse/6-es5.6217f25a68bd64c4a4a6.js": "2a7ebbc5fbe5f1e92f6d67e9b3a16130829a4dfd",
-    "https://jeronimonunes.github.io/earth-timelapse/7-es2015.08e2936f444fef0c6590.js": "06a5f9c399e16c5068a4e86b7fe6e721d42b505d",
-    "https://jeronimonunes.github.io/earth-timelapse/7-es5.08e2936f444fef0c6590.js": "5a296a847577d2df15f58585dae25aa49716d737",
+    "https://jeronimonunes.github.io/earth-timelapse/0-es2015.5fdf1197bdff81705de8.worker.js": "e9c0c11c9bde3ad55905d1524b55efb7aeb70f07",
+    "https://jeronimonunes.github.io/earth-timelapse/0-es5.5fdf1197bdff81705de8.worker.js": "29e86575dc7ee18188c4dcc1928be5f02b255990",
+    "https://jeronimonunes.github.io/earth-timelapse/1-es2015.c88e527c0d22bf23d084.js": "087b66427d394620c36f332a07819e3f43f0652a",
+    "https://jeronimonunes.github.io/earth-timelapse/1-es5.c88e527c0d22bf23d084.js": "73e3c5200e97511f83886bea2baba8f60509c7d0",
+    "https://jeronimonunes.github.io/earth-timelapse/6-es2015.67c7b90284267ad456f6.js": "4f3974da56f5c3df8634f8ff2d1dc80a138721c4",
+    "https://jeronimonunes.github.io/earth-timelapse/6-es5.67c7b90284267ad456f6.js": "25c88973c11ee4efab0b7965eaf518ddaf00537b",
+    "https://jeronimonunes.github.io/earth-timelapse/7-es2015.4142bb2a4a35306faa91.js": "fa814d8ffee7eea056d93de5dcb4a28148a0f176",
+    "https://jeronimonunes.github.io/earth-timelapse/7-es5.4142bb2a4a35306faa91.js": "67071caf8f665aa856e31dc99394b1748e267f68",
     "https://jeronimonunes.github.io/earth-timelapse/assets/icons/android-chrome-192x192.png": "66d9e0632442477b2900f079b8073863edd19700",
     "https://jeronimonunes.github.io/earth-timelapse/assets/icons/android-chrome-512x512.png": "692b06b54005390a9faaac2ec6228bae7799db9a",
     "https://jeronimonunes.github.io/earth-timelapse/assets/icons/apple-touch-icon.png": "552a51e8587dfd056a1a38a2009fc417fb442fd1",
@@ -169,15 +175,15 @@
     "https://jeronimonunes.github.io/earth-timelapse/images/view/view-zoom-in-32x32.png": "1f17f25127b95de8bf799be192fe229ff0e8ad31",
     "https://jeronimonunes.github.io/earth-timelapse/images/view/view-zoom-out-32x32.png": "680020ac3008e7749a2ca9358782a88c743b93ea",
     "https://jeronimonunes.github.io/earth-timelapse/images/white-dot.png": "39f542ee1619a95eefa04d821893694bc68d81f3",
-    "https://jeronimonunes.github.io/earth-timelapse/index.html": "edf9277d617322d1bef7bb1bdc50d5e8abdb28e8",
-    "https://jeronimonunes.github.io/earth-timelapse/main-es2015.2701f0e32c1b11cc4382.js": "c1f4ed4c30ef26a12a4ee1dfb8a6ad2949be729f",
-    "https://jeronimonunes.github.io/earth-timelapse/main-es5.2701f0e32c1b11cc4382.js": "9bffac4314b459659ee41e21cb13e7c49787a4a1",
+    "https://jeronimonunes.github.io/earth-timelapse/index.html": "e9709da49ced5d536d1ec49faacf41ce93532c80",
+    "https://jeronimonunes.github.io/earth-timelapse/main-es2015.42a990806ea5fd466f59.js": "e81b1514f350929415833850b8ecab5ccb9f990c",
+    "https://jeronimonunes.github.io/earth-timelapse/main-es5.42a990806ea5fd466f59.js": "003a41fae9028eb7327eda0f89d7c139a8d85f68",
     "https://jeronimonunes.github.io/earth-timelapse/manifest.webmanifest": "2125ee6760e89bd7a5357370cf23acaa4c742403",
-    "https://jeronimonunes.github.io/earth-timelapse/polyfills-es2015.e69008912ea6bfd9172b.js": "15a133b6cbb459a66fcd2e75f6aa25782e5d79c4",
-    "https://jeronimonunes.github.io/earth-timelapse/polyfills-es5.a6c9ab753e2e07364a83.js": "5dd6fedcaa41dc088d23f18db14c9dc30b90a4db",
-    "https://jeronimonunes.github.io/earth-timelapse/runtime-es2015.1a440f29b748be16d2c9.js": "f9da5650334e6f7e9956c9a6686015bbbadf76cc",
-    "https://jeronimonunes.github.io/earth-timelapse/runtime-es5.1a440f29b748be16d2c9.js": "4f51b09387d78c22f66db311b84384bda670de6e",
-    "https://jeronimonunes.github.io/earth-timelapse/styles.d435cd9b4ca25df5da9f.css": "0cdcd63e11da1bbe6c99fe9d5528abca3046c8de"
+    "https://jeronimonunes.github.io/earth-timelapse/polyfills-es2015.578ae4c771d50a6ed3ee.js": "15a133b6cbb459a66fcd2e75f6aa25782e5d79c4",
+    "https://jeronimonunes.github.io/earth-timelapse/polyfills-es5.41a50de0451a8d01b801.js": "243a15abc929362008f0f961f357c14cb2bb9426",
+    "https://jeronimonunes.github.io/earth-timelapse/runtime-es2015.8801579aa675722bc023.js": "f298f87ac3cc4ba05db1e36050415ee909b043e5",
+    "https://jeronimonunes.github.io/earth-timelapse/runtime-es5.8801579aa675722bc023.js": "53a4b06ca217f8557620869857932b92101cb9ac",
+    "https://jeronimonunes.github.io/earth-timelapse/styles.01706e2186db738d35b5.css": "86add9e003abecfd90717962fd4e294abaef6ed7"
   },
   "navigationUrls": [
     {

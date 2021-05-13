@@ -30,7 +30,7 @@
     "@nasaworldwind/worldwind": "^0.10.0",
     "@types/chart.js": "^2.9.24",
     "angular-cli-ghpages": "^0.6.2",
-    "chart.js": "^2.9.3",
+    "chart.js": "^2.9.4",
     "fast-png": "^5.0.2",
     "idb": "^5.0.4",
     "rxjs": "~6.6.3",
